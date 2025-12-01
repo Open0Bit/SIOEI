@@ -20,6 +20,8 @@ st.markdown("""
     .metric-value { font-size: 24px; font-weight: bold; color: white; }
     .metric-label { font-size: 12px; color: #aaa; text-transform: uppercase; }
     div.stButton > button { width: 100%; }
+    /* Ajuste para esconder o label do radio button se necessário */
+    div.row-widget.stRadio > label { display: none; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -80,13 +82,12 @@ TESES = {
     '🔥 Pimenta Crypto': {'desc': 'Alto risco em ativos digitais.', 'pesos': {'Bitcoin (BTC)': 40, 'Ethereum/Altcoins': 20, 'Tech Stocks (Nasdaq)': 20, 'LC / RDB': 20}}
 }
 
-# --- 4. FUNÇÃO MATEMÁTICA (CORRIGIDA) ---
+# --- 4. MOTOR MATEMÁTICO ---
 def calcular(pesos_dict, v_inicial, v_mensal, anos):
     inflacao_aa = 4.5; cdi_aa = 10.65; taxa_poupanca = 6.17
     total = sum(pesos_dict.values())
     
     usar_poupanca = False
-    # Se total for zero, ativa modo poupança
     if total == 0:
         usar_poupanca = True
         total = 1
@@ -130,24 +131,36 @@ def calcular(pesos_dict, v_inicial, v_mensal, anos):
         'retorno_aa': retorno_cart, 'risco': risco_pond, 'ativos': ativos_usados, 'is_poup': usar_poupanca
     }
 
-# --- 5. GERENCIAMENTO DE ESTADO (SYNC) ---
-# Inicializa os pesos no state se não existirem
+# --- 5. GERENCIAMENTO DE ESTADO INTELIGENTE (REATIVO) ---
+
+# Inicializa chaves de sessão
 for k in ATIVOS.keys():
-    if f"sl_{k}" not in st.session_state:
-        st.session_state[f"sl_{k}"] = 0
+    if f"sl_{k}" not in st.session_state: st.session_state[f"sl_{k}"] = 0
 
-def atualizar_pesos(origem_pesos):
-    """Função Faxineira: Atualiza todos os sliders de uma vez"""
-    # 1. Zera todos
+# Esta função é a mágica: ela roda toda vez que você muda o Dropdown
+def atualizar_carteira_reativa():
+    """Atualiza os pesos imediatamente baseado no modo e seleção atual"""
+    modo_atual = st.session_state.get("modo_op")
+    
+    pesos_novos = {}
+    if modo_atual == "Automático":
+        perfil = st.session_state.get("sel_perfil")
+        if perfil: pesos_novos = PERFIS[perfil]
+    elif modo_atual == "Assistido":
+        tese = st.session_state.get("sel_tese")
+        if tese: pesos_novos = TESES[tese]['pesos']
+    
+    # Se for manual, não faz nada (preserva o que o usuário mexeu)
+    if modo_atual == "Manual":
+        return
+
+    # Aplica os pesos nos sliders (memória)
     for k in ATIVOS.keys():
-        st.session_state[f"sl_{k}"] = 0
-    # 2. Aplica novos
-    for k, v in origem_pesos.items():
-        st.session_state[f"sl_{k}"] = v
+        st.session_state[f"sl_{k}"] = pesos_novos.get(k, 0)
 
-# --- 6. INTERFACE DE USUÁRIO ---
+# --- 6. INTERFACE ---
 
-# Carregamento de Logo (Blindado)
+# Carregamento de Logo
 try:
     if os.path.exists('SIOEI LOGO.jpg'): logo_image = Image.open('SIOEI LOGO.jpg')
     else:
@@ -157,12 +170,13 @@ try:
 except: logo_ok = False
 
 # Cabeçalho
-col_h_1, col_h_2 = st.columns([2, 1])
-with col_h_1:
+c_h1, c_h2 = st.columns([2, 1])
+with c_h1:
+    # O on_change no radio garante que ao trocar de aba, ele atualize
     modo = st.radio("Modo de Operação:", ["Manual", "Automático", "Assistido"], 
-                    horizontal=True, label_visibility="collapsed", key="mode_selector")
-
-with col_h_2:
+                    horizontal=True, label_visibility="collapsed", key="modo_op", 
+                    on_change=atualizar_carteira_reativa)
+with c_h2:
     c1, c2 = st.columns([3, 1])
     with c1: st.markdown("<h2 style='text-align: right; color: #00E676; margin:0;'>SIOEI</h2>", unsafe_allow_html=True)
     with c2: 
@@ -177,27 +191,28 @@ v_inicial = c1.number_input("Aporte Inicial (R$)", value=10000.0, step=100.0)
 v_mensal = c2.number_input("Aporte Mensal (R$)", value=1000.0, step=100.0)
 anos = c3.slider("Prazo (Anos)", 1, 40, 15)
 
-# Lógica de Seleção
+# Lógica de Exibição
 if modo == "Automático":
-    p_sel = st.selectbox("Selecione seu Perfil:", list(PERFIS.keys()))
+    # O on_change aqui faz a mágica de eliminar o botão "Aplicar"
+    st.selectbox("Selecione seu Perfil:", list(PERFIS.keys()), key="sel_perfil", on_change=atualizar_carteira_reativa)
     st.info("Perfil clássico baseado em tolerância a risco.")
-    # BOTÃO PARA APLICAR (Garante que o usuário sabe que vai mudar)
-    if st.button("Aplicar Perfil Automático"):
-        atualizar_pesos(PERFIS[p_sel])
-        st.rerun() # Recarrega a página para mostrar os sliders novos
+    
+    # Check de segurança para carregar na primeira vez que abre o modo
+    if sum([st.session_state[f"sl_{k}"] for k in ATIVOS]) == 0:
+        atualizar_carteira_reativa()
 
 elif modo == "Assistido":
-    t_sel = st.selectbox("Selecione a Estratégia:", list(TESES.keys()))
-    st.info(TESES[t_sel]['desc'])
-    if st.button("Carregar Estratégia"):
-        atualizar_pesos(TESES[t_sel]['pesos'])
-        st.rerun()
+    st.selectbox("Selecione a Estratégia:", list(TESES.keys()), key="sel_tese", on_change=atualizar_carteira_reativa)
+    st.info(TESES[st.session_state.sel_tese]['desc'])
+    
+    if sum([st.session_state[f"sl_{k}"] for k in ATIVOS]) == 0:
+        atualizar_carteira_reativa()
 
 else:
     st.caption("Modo Manual: Abra o 'Ajuste Fino' abaixo para configurar.")
 
-# Sliders (Lêem e Escrevem no Session State)
-with st.expander("🎛️ AJUSTE FINO DA CARTEIRA (Clique para Abrir/Fechar)", expanded=(modo=="Manual")):
+# SLIDERS (Expander sempre FECHADO por padrão: expanded=False)
+with st.expander("🎛️ AJUSTE FINO DA CARTEIRA (Clique para Abrir/Fechar)", expanded=False):
     t1, t2 = st.tabs(["🛡️ RENDA FIXA", "📈 RENDA VARIÁVEL"])
     
     with t1:
@@ -206,7 +221,6 @@ with st.expander("🎛️ AJUSTE FINO DA CARTEIRA (Clique para Abrir/Fechar)", e
         for i, k in enumerate(rf_items):
             with cols[i%3]:
                 st.slider(k, 0, 100, key=f"sl_{k}")
-                
     with t2:
         cols = st.columns(3)
         rv_items = [k for k, v in ATIVOS.items() if v['tipo'] == 'RV']
@@ -214,8 +228,8 @@ with st.expander("🎛️ AJUSTE FINO DA CARTEIRA (Clique para Abrir/Fechar)", e
             with cols[i%3]:
                 st.slider(k, 0, 100, key=f"sl_{k}")
 
-# --- CÁLCULO FINAL ---
-# Reconstrói o dicionário de pesos atual baseado nos sliders
+# --- CÁLCULO E PLOTAGEM ---
+# Pega os valores direto da memória atualizada
 pesos_atuais = {k: st.session_state[f"sl_{k}"] for k in ATIVOS.keys()}
 d = calcular(pesos_atuais, v_inicial, v_mensal, anos)
 
@@ -231,7 +245,7 @@ k3.markdown(f"""<div class="metric-card" style="border-bottom: 3px solid #00E676
 k4.markdown(f"""<div class="metric-card"><div class="metric-label">RISCO ({l_risco})</div><div class="metric-value" style="color:{c_risco}">{d['risco']:.1f}/10</div></div>""", unsafe_allow_html=True)
 
 if d['is_poup']:
-    st.warning("⚠️ MODO POUPANÇA (CARTEIRA VAZIA). Configure para ver o potencial de lucro.")
+    st.warning("⚠️ MODO POUPANÇA (CARTEIRA VAZIA). Adicione ativos ou escolha uma estratégia.")
 
 # GRÁFICOS
 g1, g2 = st.columns([2, 1])
