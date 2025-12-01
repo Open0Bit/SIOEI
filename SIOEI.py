@@ -190,23 +190,27 @@ def atualizar_reativo():
 
 # --- 6. UI ---
 try:
-    if os.path.exists('SIOEI LOGO.jpg'): logo_image = Image.open('SIOEI LOGO.jpg')
+    if os.path.exists('SIOEI LOGO.jpg'): 
+        logo_image = Image.open('SIOEI LOGO.jpg')
     else:
         url = "https://raw.githubusercontent.com/Open0Bit/SIOEI/main/SIOEI%20LOGO.jpg"
         logo_image = Image.open(BytesIO(requests.get(url).content))
     logo_ok = True
-except: logo_ok = False
+except: 
+    logo_ok = False
 
 c_h1, c_h2 = st.columns([2, 1])
 with c_h1:
     modo = st.radio("Modo de Operação:", ["Manual", "Automático", "Assistido"], 
                     horizontal=True, label_visibility="collapsed", key="modo_op", on_change=atualizar_reativo)
 with c_h2:
-    c1, c2 = st.columns([3, 1])
-    with c1: st.markdown("<h2 style='text-align: right; color: #00E676; margin:0;'>SIOEI</h2>", unsafe_allow_html=True)
-    with c2: 
-        if logo_ok: st.image(logo_image, width=60)
-        else: st.markdown("💰")
+    # ALTERADO: Ajuste de colunas para empurrar o logo totalmente para a direita
+    col_vazia, col_logo = st.columns([2, 1])
+    with col_logo:
+        if logo_ok: 
+            st.image(logo_image, width=130)
+        else: 
+            st.markdown("💰")
 
 st.divider()
 
@@ -258,7 +262,8 @@ with st.container(border=True): # Caixa elegante com borda
     if check_aposentadoria:
         c_m1, c_m2 = st.columns(2)
         with c_m1:
-            renda_desejada = st.number_input("Mesada / Renda Mensal (R$)", value=100.0, step=50.0) # DEFAULT 100
+            # FIX APLICADO: min_value=0.0 para impedir valores negativos
+            renda_desejada = st.number_input("Mesada / Renda Mensal (R$)", value=100.0, step=50.0, min_value=0.0) 
         with c_m2:
             anos_retirada = st.slider("Começar a receber em (Anos):", 0, anos, 5)
 
@@ -277,8 +282,13 @@ with dashboard_container:
     lucro_real = d['final_real'] - d['investido']
 
     k1.markdown(f"""<div class="metric-card"><div class="metric-label">TOTAL INVESTIDO</div><div class="metric-main">R$ {d['investido']:,.2f}</div></div>""", unsafe_allow_html=True)
-    k2.markdown(f"""<div class="metric-card" style="border-bottom: 3px solid {c_nom};"><div class="metric-label" style="color:{c_nom}">NOMINAL (BRUTO)</div><div class="metric-main">R$ {d['final_nom']:,.2f}</div><div class="metric-sub" style="color:{c_nom}">Lucro Nominal: +R$ {lucro_nom:,.2f}</div></div>""", unsafe_allow_html=True)
-    k3.markdown(f"""<div class="metric-card" style="border-bottom: 3px solid #00E676;"><div class="metric-label" style="color:#00E676">LUCRO REAL (PODER COMPRA)</div><div class="metric-main">+ R$ {lucro_real:,.2f}</div><div class="metric-sub">Saldo Real Total: R$ {d['final_real']:,.2f}</div></div>""", unsafe_allow_html=True)
+    
+    # ALTERADO: Legenda do Card 2 com texto solicitado
+    k2.markdown(f"""<div class="metric-card" style="border-bottom: 3px solid {c_nom};"><div class="metric-label" style="color:{c_nom}">SALDO BRUTO (NOMINAL)</div><div class="metric-main">R$ {d['final_nom']:,.2f}</div><div class="metric-sub" style="color:{c_nom}">Desc. Inflação + Tx. e Custos: R$ {d['final_real']:,.2f}</div></div>""", unsafe_allow_html=True)
+    
+    # ALTERADO: Legenda do Card 3 com texto solicitado
+    k3.markdown(f"""<div class="metric-card" style="border-bottom: 3px solid #00E676;"><div class="metric-label" style="color:#00E676">LUCRO BRUTO (NOMINAL)</div><div class="metric-main">+ R$ {lucro_nom:,.2f}</div><div class="metric-sub">Desc. Inflação + Tx. e Custos: +R$ {lucro_real:,.2f}</div></div>""", unsafe_allow_html=True)
+    
     k4.markdown(f"""<div class="metric-card"><div class="metric-label">RISCO ({l_risco})</div><div class="metric-main" style="color:{c_risco}">{d['risco']:.1f}/10</div></div>""", unsafe_allow_html=True)
 
     if d['is_poup']:
@@ -368,9 +378,9 @@ st.markdown("""
     <hr style='border: 1px solid #333;'>
     <p style='margin-bottom: 5px; font-weight: bold; letter-spacing: 1px;'>AEGRA CODE GUILD</p>
     <p>
-        🌐 Nosso site: <a href='https://sioei.com' target='_blank' style='color: #00E676; text-decoration: none;'>sioei.com</a>
+        🌐 Site: <a href='https://sioei.com' target='_blank' style='color: #00E676; text-decoration: none;'>sioei.com</a>
         &nbsp; | &nbsp;
-        📧 Nosso email: <a href='mailto:sioei@sioei.com.br' style='color: #00E676; text-decoration: none;'>sioei@sioei.com.br</a>
+        📧 Email: <a href='mailto:sioei@sioei.com.br' style='color: #00E676; text-decoration: none;'>sioei@sioei.com.br</a>
     </p>
 </div>
 """, unsafe_allow_html=True)
