@@ -5,7 +5,7 @@ import requests
 from PIL import Image
 from io import BytesIO
 import os
-import base64 # Adicionado para a nova forma de exibir o logo
+import base64
 
 # --- 1. CONFIGURAÇÃO ---
 st.set_page_config(page_title="SIOEI", layout="wide", page_icon="💰")
@@ -33,6 +33,25 @@ st.markdown("""
         background-color: #0d1117;
         margin-top: 30px;
         margin-bottom: 30px;
+    }
+
+    /* --- CORREÇÃO DO LOGO (POSICIONAMENTO ABSOLUTO) --- */
+    /* Isso garante que o logo flutue no canto direito independente do tamanho da tela */
+    .logo-container {
+        position: absolute;
+        top: -45px; /* Sobe o logo para alinhar com os botões */
+        right: 0px; /* Cola na direita */
+        z-index: 1000; /* Garante que fique por cima de tudo */
+    }
+    
+    /* Ajuste fino para telas muito pequenas (Celular Vertical) */
+    @media (max-width: 640px) {
+        .logo-container img {
+            width: 100px !important; /* Reduz levemente o logo no celular para não bater nos botões */
+        }
+        .logo-container {
+            top: -40px;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -206,24 +225,33 @@ try:
 except: 
     logo_ok = False
 
-c_h1, c_h2 = st.columns([2, 1])
-with c_h1:
+# CORREÇÃO AQUI: Em vez de usar colunas do Streamlit (que quebram no mobile), 
+# usamos um container relativo e injetamos o logo via HTML/CSS absoluto.
+# Isso garante que ele fique no topo/direita independente do layout.
+
+# 1. Renderizar o logo "flutuante" (Absolute Position)
+if logo_ok:
+    img_base64 = image_to_base64(logo_image)
+    st.markdown(
+        f"""
+        <div class="logo-container">
+            <img src="data:image/png;base64,{img_base64}" width="130">
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+else:
+    st.markdown('<div class="logo-container" style="font-size: 50px;">💰</div>', unsafe_allow_html=True)
+
+# 2. Renderizar os botões de rádio (Fluxo normal da página)
+# Usamos um container para garantir espaçamento, mas sem criar colunas que empilhem errado
+c_controles = st.container()
+with c_controles:
+    # Adiciona uma margem direita nos botões apenas para garantir que texto longo não bata no logo (opcional, mas seguro)
+    st.markdown('<style>div.row-widget.stRadio { max-width: 80%; }</style>', unsafe_allow_html=True)
+    
     modo = st.radio("Modo de Operação:", ["Manual", "Automático", "Assistido"], 
                     horizontal=True, label_visibility="collapsed", key="modo_op", on_change=atualizar_reativo)
-with c_h2:
-    # ALTERADO: Uso de HTML/CSS direto para alinhamento robusto em todas as telas
-    if logo_ok:
-        img_base64 = image_to_base64(logo_image)
-        st.markdown(
-            f"""
-            <div style="display: flex; justify-content: flex-end; align-items: center;">
-                <img src="data:image/png;base64,{img_base64}" width="130" style="max-width: 100%; height: auto;">
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    else:
-        st.markdown('<div style="display: flex; justify-content: flex-end; align-items: center; font-size: 50px;">💰</div>', unsafe_allow_html=True)
 
 st.divider()
 
