@@ -1,43 +1,29 @@
 import streamlit as st
 import matplotlib.pyplot as plt
 import numpy as np
+import requests
 from PIL import Image
+from io import BytesIO
 import os
 
-# --- CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title="SIOEI - Wealth Management", layout="wide", page_icon="💰")
+# --- 1. CONFIGURAÇÃO DA PÁGINA ---
+st.set_page_config(page_title="SIOEI", layout="wide", page_icon="💰")
 
-# Estilo CSS para deixar com cara de App Profissional (Dark Mode forçado e ajustes)
+# --- 2. ESTILO CSS (DARK MODE) ---
 st.markdown("""
 <style>
-    .stApp {
-        background-color: #0E1117;
-        color: white;
-    }
+    .stApp { background-color: #0E1117; color: white; }
     .metric-card {
-        background-color: #262730;
-        border: 1px solid #444;
-        padding: 20px;
-        border-radius: 10px;
-        text-align: center;
+        background-color: #262730; border: 1px solid #444; padding: 15px;
+        border-radius: 10px; text-align: center; margin-bottom: 10px;
     }
-    .metric-value {
-        font-size: 24px;
-        font-weight: bold;
-        color: white;
-    }
-    .metric-label {
-        font-size: 14px;
-        color: #aaa;
-    }
-    /* Ajuste para mobile */
-    [data-testid="stSidebar"] {
-        background-color: #161a24;
-    }
+    .metric-value { font-size: 24px; font-weight: bold; color: white; }
+    .metric-label { font-size: 12px; color: #aaa; text-transform: uppercase; }
+    div.stButton > button { width: 100%; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 1. DADOS (Mantidos do projeto original) ---
+# --- 3. DADOS (UNIVERSO DE ATIVOS) ---
 plt.style.use('dark_background')
 
 ATIVOS = {
@@ -94,12 +80,13 @@ TESES = {
     '🔥 Pimenta Crypto': {'desc': 'Alto risco em ativos digitais.', 'pesos': {'Bitcoin (BTC)': 40, 'Ethereum/Altcoins': 20, 'Tech Stocks (Nasdaq)': 20, 'LC / RDB': 20}}
 }
 
-# --- 2. CÁLCULO ---
+# --- 4. FUNÇÃO MATEMÁTICA (CORRIGIDA) ---
 def calcular(pesos_dict, v_inicial, v_mensal, anos):
     inflacao_aa = 4.5; cdi_aa = 10.65; taxa_poupanca = 6.17
     total = sum(pesos_dict.values())
     
     usar_poupanca = False
+    # Se total for zero, ativa modo poupança
     if total == 0:
         usar_poupanca = True
         total = 1
@@ -143,145 +130,142 @@ def calcular(pesos_dict, v_inicial, v_mensal, anos):
         'retorno_aa': retorno_cart, 'risco': risco_pond, 'ativos': ativos_usados, 'is_poup': usar_poupanca
     }
 
-# --- 3. LAYOUT DA PÁGINA ---
+# --- 5. GERENCIAMENTO DE ESTADO (SYNC) ---
+# Inicializa os pesos no state se não existirem
+for k in ATIVOS.keys():
+    if f"sl_{k}" not in st.session_state:
+        st.session_state[f"sl_{k}"] = 0
 
-# HEADER: Logo + Titulo + Modos
-col_header_1, col_header_2, col_header_3 = st.columns([2, 4, 1])
+def atualizar_pesos(origem_pesos):
+    """Função Faxineira: Atualiza todos os sliders de uma vez"""
+    # 1. Zera todos
+    for k in ATIVOS.keys():
+        st.session_state[f"sl_{k}"] = 0
+    # 2. Aplica novos
+    for k, v in origem_pesos.items():
+        st.session_state[f"sl_{k}"] = v
 
-with col_header_1:
-    modo_selecionado = st.radio("Modo:", ["Automático", "Assistido", "Manual"], horizontal=True, label_visibility="collapsed")
+# --- 6. INTERFACE DE USUÁRIO ---
 
-with col_header_2:
-    st.markdown("<h1 style='text-align: right; color: #00E676; margin: 0; padding: 0;'>SIOEI</h1>", unsafe_allow_html=True)
-
-with col_header_3:
-    # Tenta carregar logo local, se não, usa placeholder
-    if os.path.exists("logo.jpg"):
-        image = Image.open("logo.jpg")
-        st.image(image, width=70)
+# Carregamento de Logo (Blindado)
+try:
+    if os.path.exists('SIOEI LOGO.jpg'): logo_image = Image.open('SIOEI LOGO.jpg')
     else:
-        st.markdown("🖼️") # Placeholder se não tiver logo
+        url = "https://raw.githubusercontent.com/Open0Bit/SIOEI/main/SIOEI%20LOGO.jpg"
+        logo_image = Image.open(BytesIO(requests.get(url).content))
+    logo_ok = True
+except: logo_ok = False
+
+# Cabeçalho
+col_h_1, col_h_2 = st.columns([2, 1])
+with col_h_1:
+    modo = st.radio("Modo de Operação:", ["Manual", "Automático", "Assistido"], 
+                    horizontal=True, label_visibility="collapsed", key="mode_selector")
+
+with col_h_2:
+    c1, c2 = st.columns([3, 1])
+    with c1: st.markdown("<h2 style='text-align: right; color: #00E676; margin:0;'>SIOEI</h2>", unsafe_allow_html=True)
+    with c2: 
+        if logo_ok: st.image(logo_image, width=60)
+        else: st.markdown("💰")
 
 st.divider()
 
-# INPUTS FINANCEIROS
-col_in_1, col_in_2, col_in_3 = st.columns(3)
-with col_in_1:
-    v_inicial = st.number_input("Aporte Inicial (R$)", value=10000.0, step=100.0)
-with col_in_2:
-    v_mensal = st.number_input("Aporte Mensal (R$)", value=1000.0, step=100.0)
-with col_in_3:
-    anos = st.slider("Prazo (Anos)", 1, 40, 15)
+# Inputs
+c1, c2, c3 = st.columns(3)
+v_inicial = c1.number_input("Aporte Inicial (R$)", value=10000.0, step=100.0)
+v_mensal = c2.number_input("Aporte Mensal (R$)", value=1000.0, step=100.0)
+anos = c3.slider("Prazo (Anos)", 1, 40, 15)
 
-# --- LÓGICA DE ESTADO (SESSION STATE) ---
-if 'pesos' not in st.session_state:
-    st.session_state['pesos'] = {k: 0 for k in ATIVOS.keys()}
-
-# SELEÇÃO DE MODOS
-if modo_selecionado == "Automático":
-    perfil = st.selectbox("Selecione seu Perfil:", list(PERFIS.keys()))
+# Lógica de Seleção
+if modo == "Automático":
+    p_sel = st.selectbox("Selecione seu Perfil:", list(PERFIS.keys()))
     st.info("Perfil clássico baseado em tolerância a risco.")
-    pesos_alvo = PERFIS[perfil]
-    # Atualiza session state apenas se necessário
-    st.session_state['pesos'] = {k: pesos_alvo.get(k, 0) for k in ATIVOS.keys()}
+    # BOTÃO PARA APLICAR (Garante que o usuário sabe que vai mudar)
+    if st.button("Aplicar Perfil Automático"):
+        atualizar_pesos(PERFIS[p_sel])
+        st.rerun() # Recarrega a página para mostrar os sliders novos
+
+elif modo == "Assistido":
+    t_sel = st.selectbox("Selecione a Estratégia:", list(TESES.keys()))
+    st.info(TESES[t_sel]['desc'])
+    if st.button("Carregar Estratégia"):
+        atualizar_pesos(TESES[t_sel]['pesos'])
+        st.rerun()
+
+else:
+    st.caption("Modo Manual: Abra o 'Ajuste Fino' abaixo para configurar.")
+
+# Sliders (Lêem e Escrevem no Session State)
+with st.expander("🎛️ AJUSTE FINO DA CARTEIRA (Clique para Abrir/Fechar)", expanded=(modo=="Manual")):
+    t1, t2 = st.tabs(["🛡️ RENDA FIXA", "📈 RENDA VARIÁVEL"])
     
-elif modo_selecionado == "Assistido":
-    tese = st.selectbox("Selecione a Estratégia:", list(TESES.keys()))
-    st.info(TESES[tese]['desc'])
-    pesos_alvo = TESES[tese]['pesos']
-    st.session_state['pesos'] = {k: pesos_alvo.get(k, 0) for k in ATIVOS.keys()}
+    with t1:
+        cols = st.columns(3)
+        rf_items = [k for k, v in ATIVOS.items() if v['tipo'] == 'RF']
+        for i, k in enumerate(rf_items):
+            with cols[i%3]:
+                st.slider(k, 0, 100, key=f"sl_{k}")
+                
+    with t2:
+        cols = st.columns(3)
+        rv_items = [k for k, v in ATIVOS.items() if v['tipo'] == 'RV']
+        for i, k in enumerate(rv_items):
+            with cols[i%3]:
+                st.slider(k, 0, 100, key=f"sl_{k}")
 
-else: # Manual
-    st.warning("Modo Manual: Abra o 'Ajuste Fino' abaixo para configurar. (Inicia como Poupança se zerado).")
+# --- CÁLCULO FINAL ---
+# Reconstrói o dicionário de pesos atual baseado nos sliders
+pesos_atuais = {k: st.session_state[f"sl_{k}"] for k in ATIVOS.keys()}
+d = calcular(pesos_atuais, v_inicial, v_mensal, anos)
 
-# AJUSTE FINO (EXPANDER)
-with st.expander("🎛️ AJUSTE FINO DA CARTEIRA (Clique para Abrir/Fechar)", expanded=(modo_selecionado == "Manual")):
-    tab_rf, tab_rv = st.tabs(["🛡️ RENDA FIXA", "📈 RENDA VARIÁVEL"])
-    
-    # Criar sliders dinamicamente baseados no session_state
-    with tab_rf:
-        cols_rf = st.columns(3)
-        rf_ativos = [k for k, v in ATIVOS.items() if v['tipo'] == 'RF']
-        for i, ativo in enumerate(rf_ativos):
-            with cols_rf[i % 3]:
-                st.session_state['pesos'][ativo] = st.slider(
-                    ativo, 0, 100, int(st.session_state['pesos'][ativo]), step=5, key=f"s_{ativo}"
-                )
-    
-    with tab_rv:
-        cols_rv = st.columns(3)
-        rv_ativos = [k for k, v in ATIVOS.items() if v['tipo'] == 'RV']
-        for i, ativo in enumerate(rv_ativos):
-            with cols_rv[i % 3]:
-                st.session_state['pesos'][ativo] = st.slider(
-                    ativo, 0, 100, int(st.session_state['pesos'][ativo]), step=5, key=f"s_{ativo}"
-                )
+# KPI
+k1, k2, k3, k4 = st.columns(4)
+c_nom = "#00BCD4" if not d['is_poup'] else "#757575"
+c_risco = "#4CAF50" if d['risco'] < 4 else "#FFC107" if d['risco'] < 7 else "#F44336"
+l_risco = "Baixo" if d['risco'] < 4 else "Médio" if d['risco'] < 7 else "Alto"
 
-# --- CÁLCULOS E DASHBOARD ---
-d = calcular(st.session_state['pesos'], v_inicial, v_mensal, anos)
-
-# KPI CARDS
-col1, col2, col3, col4 = st.columns(4)
-cor_nom = "#00BCD4" if not d['is_poup'] else "#757575"
-cor_risco = "#4CAF50" if d['risco'] < 4 else "#FFC107" if d['risco'] < 7 else "#F44336"
-risco_label = "Baixo" if d['risco'] < 4 else "Médio" if d['risco'] < 7 else "Alto"
-
-with col1:
-    st.markdown(f"""<div class="metric-card"><div class="metric-label">TOTAL INVESTIDO</div><div class="metric-value">R$ {d['investido']:,.2f}</div></div>""", unsafe_allow_html=True)
-with col2:
-    st.markdown(f"""<div class="metric-card" style="border-bottom: 3px solid {cor_nom};"><div class="metric-label" style="color:{cor_nom}">NOMINAL (BRUTO)</div><div class="metric-value">R$ {d['final_nom']:,.2f}</div></div>""", unsafe_allow_html=True)
-with col3:
-    st.markdown(f"""<div class="metric-card" style="border-bottom: 3px solid #00E676;"><div class="metric-label" style="color:#00E676">REAL (PODER COMPRA)</div><div class="metric-value">R$ {d['final_real']:,.2f}</div></div>""", unsafe_allow_html=True)
-with col4:
-    st.markdown(f"""<div class="metric-card"><div class="metric-label">RISCO ({risco_label})</div><div class="metric-value" style="color:{cor_risco}">{d['risco']:.1f}/10</div></div>""", unsafe_allow_html=True)
+k1.markdown(f"""<div class="metric-card"><div class="metric-label">TOTAL INVESTIDO</div><div class="metric-value">R$ {d['investido']:,.2f}</div></div>""", unsafe_allow_html=True)
+k2.markdown(f"""<div class="metric-card" style="border-bottom: 3px solid {c_nom};"><div class="metric-label" style="color:{c_nom}">NOMINAL (BRUTO)</div><div class="metric-value">R$ {d['final_nom']:,.2f}</div></div>""", unsafe_allow_html=True)
+k3.markdown(f"""<div class="metric-card" style="border-bottom: 3px solid #00E676;"><div class="metric-label" style="color:#00E676">REAL (PODER COMPRA)</div><div class="metric-value">R$ {d['final_real']:,.2f}</div></div>""", unsafe_allow_html=True)
+k4.markdown(f"""<div class="metric-card"><div class="metric-label">RISCO ({l_risco})</div><div class="metric-value" style="color:{c_risco}">{d['risco']:.1f}/10</div></div>""", unsafe_allow_html=True)
 
 if d['is_poup']:
-    st.error("⚠️ ALERTA: Dinheiro parado na Poupança! Configure a carteira para ver rendimentos reais.")
-
-st.write("") # Espaçamento
+    st.warning("⚠️ MODO POUPANÇA (CARTEIRA VAZIA). Configure para ver o potencial de lucro.")
 
 # GRÁFICOS
-col_graph, col_pie = st.columns([7, 4])
+g1, g2 = st.columns([2, 1])
 
-with col_graph:
-    fig_line, ax1 = plt.subplots(figsize=(10, 5))
-    color_line = '#00BCD4' if not d['is_poup'] else '#9E9E9E'
-    ax1.plot(d['x'], d['y_cart'], color=color_line, linewidth=2, label='Nominal (Bruto)')
-    ax1.plot(d['x'], d['y_real'], color='#00E676', linewidth=2, label='Real (Poder Compra)')
-    ax1.plot(d['x'], d['y_inf'], color='#FF9800', linestyle=':', alpha=0.6, label='Inflação')
-    ax1.plot(d['x'], d['y_cdi'], color='#fff', linestyle='--', alpha=0.3, label='CDI')
-    alpha_poup = 0.8 if d['is_poup'] else 0.3
-    ax1.plot(d['x'], d['y_poup'], color='#F44336', linestyle='--', alpha=alpha_poup, label='Poupança')
-    ax1.fill_between(d['x'], d['y_cart'], d['y_real'], color=color_line, alpha=0.1)
+with g1:
+    fig, ax = plt.subplots(figsize=(10, 5))
+    c_line = '#00BCD4' if not d['is_poup'] else '#9E9E9E'
+    ax.plot(d['x'], d['y_cart'], color=c_line, linewidth=2, label='Nominal')
+    ax.plot(d['x'], d['y_real'], color='#00E676', linewidth=2, label='Real')
+    ax.plot(d['x'], d['y_inf'], color='#FF9800', linestyle=':', alpha=0.5, label='Inflação')
+    ax.plot(d['x'], d['y_cdi'], color='white', linestyle='--', alpha=0.3, label='CDI')
+    if d['is_poup']: ax.plot(d['x'], d['y_poup'], color='#F44336', linestyle='--', label='Poupança')
     
-    ax1.set_title(f"Projeção Comparativa ({anos} anos)", color='white', loc='left')
-    ax1.legend(loc='upper left', fontsize='small', frameon=False, ncol=2)
-    ax1.grid(True, alpha=0.1)
-    # Remover bordas
-    ax1.spines['top'].set_visible(False); ax1.spines['right'].set_visible(False)
-    ax1.spines['bottom'].set_color('#444'); ax1.spines['left'].set_color('#444')
-    ax1.tick_params(colors='#aaa')
-    st.pyplot(fig_line)
+    ax.fill_between(d['x'], d['y_cart'], d['y_real'], color=c_line, alpha=0.1)
+    ax.set_title(f"Projeção ({anos} Anos)", color='white', loc='left')
+    ax.legend(loc='upper left', frameon=False, ncol=2, fontsize='small')
+    ax.grid(True, alpha=0.1)
+    ax.spines['top'].set_visible(False); ax.spines['right'].set_visible(False); ax.spines['bottom'].set_color('#444'); ax.spines['left'].set_color('#444'); ax.tick_params(colors='#aaa')
+    st.pyplot(fig)
 
-with col_pie:
-    fig_pie, ax2 = plt.subplots(figsize=(6, 6))
+with g2:
+    fig2, ax2 = plt.subplots(figsize=(6, 6))
     vals = [i['peso'] for i in d['ativos']]
     labs = [f"{i['nome']}\n{i['peso']:.0f}%" for i in d['ativos']]
     colors = [i['cor'] for i in d['ativos']]
+    if not vals: vals=[1]; labs=[""]; colors=["#333"]
     
-    font_size = 9 if len(vals) < 10 else 8
-    wedges, texts = ax2.pie(vals, labels=labs, colors=colors, startangle=90,
-                            labeldistance=1.1, textprops={'color':"white", 'fontsize': font_size},
-                            wedgeprops=dict(width=0.45, edgecolor='#222'))
-    ax2.set_title("Alocação Atual", color='white')
-    st.pyplot(fig_pie)
+    ax2.pie(vals, labels=labs, colors=colors, startangle=90, textprops={'color':"white", 'fontsize': 8}, wedgeprops=dict(width=0.45, edgecolor='#222'))
+    ax2.set_title("Alocação", color='white')
+    st.pyplot(fig2)
 
-# TABELA EDUCATIVA
-st.subheader("🧠 Raio-X da Estratégia")
+st.markdown("### 🧠 Raio-X da Carteira")
 for item in d['ativos']:
-    col_a, col_b = st.columns([1, 3])
-    with col_a:
-        st.markdown(f"<span style='color:{item['cor']}; font-weight:bold;'>● {item['nome']}</span>", unsafe_allow_html=True)
-    with col_b:
-        st.caption(item['desc'])
-    st.divider()
+    c1, c2 = st.columns([1, 4])
+    c1.markdown(f"<span style='color:{item['cor']}; font-weight:bold;'>● {item['nome']}</span>", unsafe_allow_html=True)
+    c2.caption(item['desc'])
+    st.markdown("<hr style='margin: 5px 0; border-color: #333;'>", unsafe_allow_html=True)
