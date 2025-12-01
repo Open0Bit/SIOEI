@@ -1,5 +1,3 @@
----
-
 # 📘 Manual do Usuário | SIOEI 1.0 "Sprout"
 **Sistema Inteligente de Otimização e Execução de Investimentos**
 
@@ -104,7 +102,8 @@ No rodapé da página, você encontra o módulo de "Simulação de Mesada".
 ## 📞 Suporte
 Desenvolvido por **AEGRA CODE GUILD**.
 * **Site:** [sioei.com](https://sioei.com)
-* **Email:** [sioei@sioei.com.br](mailto:sioei@sioei.com)
+* **Email:** [sioei@sioei.com](mailto:sioei@sioei.com)
 
 ---
+
 *Versão 1.0 "Sprout" - Todos os direitos reservados.*
