@@ -5,6 +5,7 @@ import requests
 from PIL import Image
 from io import BytesIO
 import os
+import base64 # Adicionado para a nova forma de exibir o logo
 
 # --- 1. CONFIGURAÇÃO ---
 st.set_page_config(page_title="SIOEI", layout="wide", page_icon="💰")
@@ -189,6 +190,12 @@ def atualizar_reativo():
         st.session_state[f"sl_{k}"] = pesos.get(k, 0)
 
 # --- 6. UI ---
+# Função para preparar a imagem para o HTML
+def image_to_base64(img):
+    buffered = BytesIO()
+    img.save(buffered, format="PNG")
+    return base64.b64encode(buffered.getvalue()).decode()
+
 try:
     if os.path.exists('SIOEI LOGO.jpg'): 
         logo_image = Image.open('SIOEI LOGO.jpg')
@@ -204,13 +211,19 @@ with c_h1:
     modo = st.radio("Modo de Operação:", ["Manual", "Automático", "Assistido"], 
                     horizontal=True, label_visibility="collapsed", key="modo_op", on_change=atualizar_reativo)
 with c_h2:
-    # ALTERADO: Ajuste de colunas para empurrar o logo totalmente para a direita
-    col_vazia, col_logo = st.columns([2, 1])
-    with col_logo:
-        if logo_ok: 
-            st.image(logo_image, width=130)
-        else: 
-            st.markdown("💰")
+    # ALTERADO: Uso de HTML/CSS direto para alinhamento robusto em todas as telas
+    if logo_ok:
+        img_base64 = image_to_base64(logo_image)
+        st.markdown(
+            f"""
+            <div style="display: flex; justify-content: flex-end; align-items: center;">
+                <img src="data:image/png;base64,{img_base64}" width="130" style="max-width: 100%; height: auto;">
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown('<div style="display: flex; justify-content: flex-end; align-items: center; font-size: 50px;">💰</div>', unsafe_allow_html=True)
 
 st.divider()
 
@@ -262,7 +275,7 @@ with st.container(border=True): # Caixa elegante com borda
     if check_aposentadoria:
         c_m1, c_m2 = st.columns(2)
         with c_m1:
-            # FIX APLICADO: min_value=0.0 para impedir valores negativos
+            # FIX: min_value=0.0 mantido
             renda_desejada = st.number_input("Mesada / Renda Mensal (R$)", value=100.0, step=50.0, min_value=0.0) 
         with c_m2:
             anos_retirada = st.slider("Começar a receber em (Anos):", 0, anos, 5)
@@ -283,10 +296,10 @@ with dashboard_container:
 
     k1.markdown(f"""<div class="metric-card"><div class="metric-label">TOTAL INVESTIDO</div><div class="metric-main">R$ {d['investido']:,.2f}</div></div>""", unsafe_allow_html=True)
     
-    # ALTERADO: Legenda do Card 2 com texto solicitado
+    # Card 2: Texto validado mantido
     k2.markdown(f"""<div class="metric-card" style="border-bottom: 3px solid {c_nom};"><div class="metric-label" style="color:{c_nom}">SALDO BRUTO (NOMINAL)</div><div class="metric-main">R$ {d['final_nom']:,.2f}</div><div class="metric-sub" style="color:{c_nom}">Desc. Inflação + Tx. e Custos: R$ {d['final_real']:,.2f}</div></div>""", unsafe_allow_html=True)
     
-    # ALTERADO: Legenda do Card 3 com texto solicitado
+    # Card 3: Texto validado mantido
     k3.markdown(f"""<div class="metric-card" style="border-bottom: 3px solid #00E676;"><div class="metric-label" style="color:#00E676">LUCRO BRUTO (NOMINAL)</div><div class="metric-main">+ R$ {lucro_nom:,.2f}</div><div class="metric-sub">Desc. Inflação + Tx. e Custos: +R$ {lucro_real:,.2f}</div></div>""", unsafe_allow_html=True)
     
     k4.markdown(f"""<div class="metric-card"><div class="metric-label">RISCO ({l_risco})</div><div class="metric-main" style="color:{c_risco}">{d['risco']:.1f}/10</div></div>""", unsafe_allow_html=True)
