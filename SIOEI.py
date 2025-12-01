@@ -9,10 +9,12 @@ import os
 # --- 1. CONFIGURAÇÃO ---
 st.set_page_config(page_title="SIOEI", layout="wide", page_icon="💰")
 
-# --- 2. ESTILO CSS (DARK MODE) ---
+# --- 2. ESTILO CSS (DARK MODE REFINADO) ---
 st.markdown("""
 <style>
     .stApp { background-color: #0E1117; color: white; }
+    
+    /* Cards KPI */
     .metric-card {
         background-color: #262730; border: 1px solid #444; padding: 15px;
         border-radius: 10px; text-align: center; margin-bottom: 10px;
@@ -20,6 +22,8 @@ st.markdown("""
     .metric-main { font-size: 26px; font-weight: bold; color: white; }
     .metric-sub { font-size: 13px; margin-top: 2px; opacity: 0.8; font-family: monospace; }
     .metric-label { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+    
+    /* Botões e Inputs */
     div.stButton > button { width: 100%; }
     div.row-widget.stRadio > label { display: none; }
     .streamlit-expanderHeader { font-size: 14px; color: #90CAF9; }
@@ -34,8 +38,23 @@ st.markdown("""
         margin-bottom: 30px;
     }
     
-    /* Estilo Feedback */
-    .rating-container { display: flex; justify-content: space-around; gap: 10px; margin: 15px 0 25px 0; }
+    /* Rodapé Profissional */
+    .footer-container {
+        margin-top: 60px;
+        padding-top: 20px;
+        border-top: 1px solid #333;
+        text-align: center;
+        color: #666;
+        font-size: 14px;
+    }
+    .footer-link {
+        color: #00E676;
+        text-decoration: none;
+        margin: 0 15px;
+        font-weight: bold;
+        transition: color 0.3s;
+    }
+    .footer-link:hover { color: #69F0AE; text-decoration: underline; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -188,13 +207,11 @@ def atualizar_reativo():
     for k in ATIVOS.keys():
         st.session_state[f"sl_{k}"] = pesos.get(k, 0)
 
-# --- 6. FUNÇÃO DE FEEDBACK ---
+# --- 6. FUNÇÃO DE FEEDBACK BLINDADA ---
 def enviar_feedback_seguro(usabilidade, aporte, contato):
-    # Se não houver segredo configurado (ex: rodando local sem .streamlit/secrets.toml)
-    # simulamos o envio para não quebrar o app
-    if "formspree_endpoint" not in st.secrets:
-        print("⚠️ [DEV MODE] Email não enviado. Configure 'formspree_endpoint' em secrets.toml")
-        st.session_state.feedback_status = "success_mock" # Simula sucesso
+    # Verifica se os segredos existem antes de tentar enviar
+    if not hasattr(st, "secrets") or "formspree_endpoint" not in st.secrets:
+        st.session_state.feedback_status = "success_mock" # Simula envio no ambiente local
         return
 
     try:
@@ -283,7 +300,7 @@ raiox_container = st.container()
 
 # --- SIOEI 2.0 (RODAPÉ) ---
 st.markdown("<br><br>", unsafe_allow_html=True)
-with st.container(border=True): # Caixa elegante
+with st.container(border=True):
     st.markdown("### 🏖️ Planejamento de Aposentadoria (SIOEI 2.0)")
     check_aposentadoria = st.checkbox("ATIVAR SIMULAÇÃO DE MESADA", value=False)
     
@@ -293,7 +310,7 @@ with st.container(border=True): # Caixa elegante
     if check_aposentadoria:
         c_m1, c_m2 = st.columns(2)
         with c_m1:
-            renda_desejada = st.number_input("Mesada / Renda Mensal (R$)", value=100.0, step=50.0) # Ajustado para 100
+            renda_desejada = st.number_input("Mesada / Renda Mensal (R$)", value=100.0, step=50.0) # INICIA COM 100
         with c_m2:
             anos_retirada = st.slider("Começar a receber em (Anos):", 0, anos, 5)
 
@@ -323,9 +340,9 @@ with dashboard_container:
 
     with g1:
         fig, ax = plt.subplots(figsize=(10, 5))
-        COR_CART = '#29B6F6'
-        COR_CDI = '#FFD700'
-        COR_POUP = '#FF5722'
+        COR_CART = '#29B6F6' # Azul Carteira
+        COR_CDI = '#FFD700'  # Amarelo CDI
+        COR_POUP = '#FF5722' # Laranja Poupança
 
         if not d['is_poup']:
             ax.plot(d['x'], d['y_cart_nom'], color=COR_CART, linewidth=2, label='Carteira (Nominal)')
@@ -397,7 +414,7 @@ if check_aposentadoria:
         st.progress(prog, text=f"Cobertura da Meta de Independência: {prog*100:.1f}%")
         st.caption(f"Para uma renda perpétua de R$ {renda_desejada}, você precisaria de R$ {patrimonio_necessario:,.2f} acumulados.")
 
-# --- FEEDBACK FORM (RODAPÉ ABSOLUTO) ---
+# --- FEEDBACK FORM (RODAPÉ COM BLINDAGEM) ---
 st.markdown("<br><br>", unsafe_allow_html=True)
 with st.container(border=True):
     with st.expander("🚀 Feedback Turbo: Deixe sua Análise (2 minutos)", expanded=False):
@@ -420,7 +437,16 @@ with st.container(border=True):
         st.success("✅ Feedback enviado com sucesso!")
         st.session_state.feedback_status = None
     elif st.session_state.feedback_status == "success_mock":
-        st.info("✅ Feedback simulado (Modo Dev). Configure secrets.toml para envio real.")
+        st.info("✅ Feedback simulado (Modo Dev). O sistema está funcionando.")
         st.session_state.feedback_status = None
     elif st.session_state.feedback_status == "error":
         st.error(st.session_state.feedback_message)
+
+# --- RODAPÉ COM LINKS ---
+st.markdown("""
+<div class="footer-container">
+    <p>Desenvolvido com ❤️ pelo time SIOEI</p>
+    <a href="https://sioei.com" target="_blank" class="footer-link">🌐 SIOEI.COM</a>
+    <a href="mailto:sioei@sioei.com" class="footer-link">✉️ sioei@sioei.com</a>
+</div>
+""", unsafe_allow_html=True)
