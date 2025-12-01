@@ -1,5 +1,3 @@
----
-
 # 📘 Manual do Usuário | SIOEI 1.0 "Sprout"
 **Sistema Inteligente de Otimização e Execução de Investimentos**
 
@@ -107,4 +105,5 @@ Desenvolvido por **AEGRA CODE GUILD**.
 * **Email:** [sioei@sioei.com.br](mailto:sioei@sioei.com.br)
 
 ---
+
 *Versão 1.0 "Sprout" - Todos os direitos reservados.*
