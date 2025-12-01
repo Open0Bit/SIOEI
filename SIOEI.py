@@ -9,12 +9,10 @@ import os
 # --- 1. CONFIGURAÇÃO ---
 st.set_page_config(page_title="SIOEI", layout="wide", page_icon="💰")
 
-# --- 2. ESTILO CSS (DARK MODE REFINADO) ---
+# --- 2. ESTILO CSS (DARK MODE) ---
 st.markdown("""
 <style>
     .stApp { background-color: #0E1117; color: white; }
-    
-    /* Cards KPI */
     .metric-card {
         background-color: #262730; border: 1px solid #444; padding: 15px;
         border-radius: 10px; text-align: center; margin-bottom: 10px;
@@ -22,8 +20,6 @@ st.markdown("""
     .metric-main { font-size: 26px; font-weight: bold; color: white; }
     .metric-sub { font-size: 13px; margin-top: 2px; opacity: 0.8; font-family: monospace; }
     .metric-label { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
-    
-    /* Botões e Inputs */
     div.stButton > button { width: 100%; }
     div.row-widget.stRadio > label { display: none; }
     .streamlit-expanderHeader { font-size: 14px; color: #90CAF9; }
@@ -37,24 +33,6 @@ st.markdown("""
         margin-top: 30px;
         margin-bottom: 30px;
     }
-    
-    /* Rodapé Profissional */
-    .footer-container {
-        margin-top: 60px;
-        padding-top: 20px;
-        border-top: 1px solid #333;
-        text-align: center;
-        color: #666;
-        font-size: 14px;
-    }
-    .footer-link {
-        color: #00E676;
-        text-decoration: none;
-        margin: 0 15px;
-        font-weight: bold;
-        transition: color 0.3s;
-    }
-    .footer-link:hover { color: #69F0AE; text-decoration: underline; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -158,14 +136,17 @@ def calcular(pesos_dict, v_inicial, v_mensal, anos, renda_desejada=0, anos_inici
         if usar_retirada and m >= mes_inicio_retirada:
             fluxo = v_mensal - renda_desejada
         
+        # 1. Carteira
         y_cart_nom.append(y_cart_nom[-1] * (1 + tx_cart) + fluxo)
         fator_real_cart = (1 + tx_cart) / (1 + tx_inf)
         y_cart_real.append(y_cart_real[-1] * fator_real_cart + fluxo)
         
+        # 2. CDI
         y_cdi_nom.append(y_cdi_nom[-1] * (1 + tx_cdi) + fluxo)
         fator_real_cdi = (1 + tx_cdi) / (1 + tx_inf)
         y_cdi_real.append(y_cdi_real[-1] * fator_real_cdi + fluxo)
         
+        # 3. Poupança
         y_poup_nom.append(y_poup_nom[-1] * (1 + tx_poup) + fluxo)
         fator_real_poup = (1 + tx_poup) / (1 + tx_inf)
         y_poup_real.append(y_poup_real[-1] * fator_real_poup + fluxo)
@@ -207,38 +188,7 @@ def atualizar_reativo():
     for k in ATIVOS.keys():
         st.session_state[f"sl_{k}"] = pesos.get(k, 0)
 
-# --- 6. FUNÇÃO DE FEEDBACK BLINDADA ---
-def enviar_feedback_seguro(usabilidade, aporte, contato):
-    # Verifica se os segredos existem antes de tentar enviar
-    if not hasattr(st, "secrets") or "formspree_endpoint" not in st.secrets:
-        st.session_state.feedback_status = "success_mock" # Simula envio no ambiente local
-        return
-
-    try:
-        FEEDBACK_URL = st.secrets["formspree_endpoint"] 
-        payload = {
-            "Usabilidade": usabilidade,
-            "Aporte_Faltante": aporte,
-            "Contato": contato,
-            "_subject": "Novo Feedback - SIOEI App"
-        }
-        response = requests.post(FEEDBACK_URL, data=payload)
-        
-        if response.status_code == 200:
-            st.session_state.feedback_status = "success"
-        else:
-            st.session_state.feedback_status = "error"
-            st.session_state.feedback_message = f"Erro no envio (código {response.status_code})."
-            
-    except requests.exceptions.RequestException as e:
-        st.session_state.feedback_status = "error"
-        st.session_state.feedback_message = f"Erro de rede: {e}"
-
-if 'feedback_status' not in st.session_state:
-    st.session_state.feedback_status = None
-    st.session_state.feedback_message = ""
-
-# --- 7. UI ---
+# --- 6. UI ---
 try:
     if os.path.exists('SIOEI LOGO.jpg'): logo_image = Image.open('SIOEI LOGO.jpg')
     else:
@@ -265,18 +215,16 @@ v_inicial = c1.number_input("Aporte Inicial (R$)", value=10000.0, step=100.0)
 v_mensal = c2.number_input("Aporte Mensal (R$)", value=0.0, step=100.0)
 anos = c3.slider("Prazo (Anos)", 1, 40, 10)
 
-selection_placeholder = st.empty()
-with selection_placeholder.container():
-    if modo == "Automático":
-        st.selectbox("Selecione seu Perfil:", list(PERFIS.keys()), key="sel_perfil", on_change=atualizar_reativo)
-        st.info("Perfil clássico baseado em tolerância a risco.")
-        if sum([st.session_state[f"sl_{k}"] for k in ATIVOS]) == 0: atualizar_reativo()
-    elif modo == "Assistido":
-        st.selectbox("Selecione a Estratégia:", list(TESES.keys()), key="sel_tese", on_change=atualizar_reativo)
-        st.info(TESES[st.session_state.sel_tese]['desc'])
-        if sum([st.session_state[f"sl_{k}"] for k in ATIVOS]) == 0: atualizar_reativo()
-    else:
-        st.caption("Modo Manual: Abra o 'Ajuste Fino' abaixo para configurar.")
+if modo == "Automático":
+    st.selectbox("Selecione seu Perfil:", list(PERFIS.keys()), key="sel_perfil", on_change=atualizar_reativo)
+    st.info("Perfil clássico baseado em tolerância a risco.")
+    if sum([st.session_state[f"sl_{k}"] for k in ATIVOS]) == 0: atualizar_reativo()
+elif modo == "Assistido":
+    st.selectbox("Selecione a Estratégia:", list(TESES.keys()), key="sel_tese", on_change=atualizar_reativo)
+    st.info(TESES[st.session_state.sel_tese]['desc'])
+    if sum([st.session_state[f"sl_{k}"] for k in ATIVOS]) == 0: atualizar_reativo()
+else:
+    st.caption("Modo Manual: Abra o 'Ajuste Fino' abaixo para configurar.")
 
 # --- SLIDERS ---
 with st.expander("🎛️ AJUSTE FINO DA CARTEIRA (Clique para Abrir/Fechar)", expanded=False):
@@ -292,15 +240,15 @@ with st.expander("🎛️ AJUSTE FINO DA CARTEIRA (Clique para Abrir/Fechar)", e
     with t1: gerar_sliders_educativos('RF', st)
     with t2: gerar_sliders_educativos('RV', st)
 
-# --- CONTAINER DE DASHBOARD ---
+# --- CONTAINER DASHBOARD ---
 dashboard_container = st.container()
 
-# --- RAIO-X CONTAINER ---
+# --- CONTAINER RAIO-X ---
 raiox_container = st.container()
 
 # --- SIOEI 2.0 (RODAPÉ) ---
 st.markdown("<br><br>", unsafe_allow_html=True)
-with st.container(border=True):
+with st.container(border=True): # Caixa elegante com borda
     st.markdown("### 🏖️ Planejamento de Aposentadoria (SIOEI 2.0)")
     check_aposentadoria = st.checkbox("ATIVAR SIMULAÇÃO DE MESADA", value=False)
     
@@ -310,11 +258,11 @@ with st.container(border=True):
     if check_aposentadoria:
         c_m1, c_m2 = st.columns(2)
         with c_m1:
-            renda_desejada = st.number_input("Mesada / Renda Mensal (R$)", value=100.0, step=50.0) # INICIA COM 100
+            renda_desejada = st.number_input("Mesada / Renda Mensal (R$)", value=100.0, step=50.0) # DEFAULT 100
         with c_m2:
             anos_retirada = st.slider("Começar a receber em (Anos):", 0, anos, 5)
 
-# --- CÁLCULO GERAL ---
+# --- CÁLCULO FINAL ---
 pesos_atuais = {k: st.session_state[f"sl_{k}"] for k in ATIVOS.keys()}
 d = calcular(pesos_atuais, v_inicial, v_mensal, anos, renda_desejada, anos_retirada, check_aposentadoria)
 
@@ -414,39 +362,15 @@ if check_aposentadoria:
         st.progress(prog, text=f"Cobertura da Meta de Independência: {prog*100:.1f}%")
         st.caption(f"Para uma renda perpétua de R$ {renda_desejada}, você precisaria de R$ {patrimonio_necessario:,.2f} acumulados.")
 
-# --- FEEDBACK FORM (RODAPÉ COM BLINDAGEM) ---
-st.markdown("<br><br>", unsafe_allow_html=True)
-with st.container(border=True):
-    with st.expander("🚀 Feedback Turbo: Deixe sua Análise (2 minutos)", expanded=False):
-        st.markdown("💰 **Seu feedback vale mais que ouro!**")
-        with st.form(key='feedback_form'):
-            st.markdown("<label style='font-size: 14px; margin-bottom: 5px; font-weight: bold;'>1. Usabilidade (Facilidade 100%):</label>", unsafe_allow_html=True)
-            usabilidade_f = st.radio("Usabilidade", ['5/5 🚀 Foguete', '3/5 🤝 Ok', '1/5 📉 Ruim'], index=1, horizontal=True)
-            
-            st.markdown("<hr style='border-color: #333; margin: 20px 0;'>", unsafe_allow_html=True)
-            st.markdown("<label style='font-size: 14px; margin-bottom: 5px; font-weight: bold;'>2. O que falta no SIOEI?</label>", unsafe_allow_html=True)
-            aporte_f = st.text_area("Aporte", placeholder="Ex: Mais criptos, modo noturno...", label_visibility="collapsed")
-            
-            st.markdown("<label style='font-size: 14px; margin-bottom: 5px; font-weight: bold;'>3. Contato (Opcional):</label>", unsafe_allow_html=True)
-            contato_f = st.text_input("Contato", placeholder="@telegram ou email", label_visibility="collapsed")
-            
-            if st.form_submit_button("ENVIAR FEEDBACK"):
-                enviar_feedback_seguro(usabilidade_f, aporte_f, contato_f)
-
-    if st.session_state.feedback_status == "success":
-        st.success("✅ Feedback enviado com sucesso!")
-        st.session_state.feedback_status = None
-    elif st.session_state.feedback_status == "success_mock":
-        st.info("✅ Feedback simulado (Modo Dev). O sistema está funcionando.")
-        st.session_state.feedback_status = None
-    elif st.session_state.feedback_status == "error":
-        st.error(st.session_state.feedback_message)
-
-# --- RODAPÉ COM LINKS ---
+# --- RODAPÉ (FOOTER) ---
 st.markdown("""
-<div class="footer-container">
-    <p>Desenvolvido com ❤️ pelo time SIOEI</p>
-    <a href="https://sioei.com" target="_blank" class="footer-link">🌐 SIOEI.COM</a>
-    <a href="mailto:sioei@sioei.com" class="footer-link">✉️ sioei@sioei.com</a>
+<div style='text-align: center; margin-top: 50px; color: #888; font-size: 14px;'>
+    <hr style='border: 1px solid #333;'>
+    <p style='margin-bottom: 5px; font-weight: bold; letter-spacing: 1px;'>AEGRA CODE GUILD</p>
+    <p>
+        🌐 Nosso site: <a href='https://sioei.com' target='_blank' style='color: #00E676; text-decoration: none;'>sioei.com</a>
+        &nbsp; | &nbsp;
+        📧 Nosso email: <a href='mailto:sioei@sioei.com.br' style='color: #00E676; text-decoration: none;'>sioei@sioei.com.br</a>
+    </p>
 </div>
 """, unsafe_allow_html=True)
