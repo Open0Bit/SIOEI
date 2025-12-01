@@ -24,7 +24,7 @@ O S.I.O.E.I. é uma plataforma **FinTech de vanguarda** que utiliza **Inteligên
 ## 🚀 Links Rápidos
 
 💻 **Repositório Oficial:** [github.com/Open0Bit/SIOEI](https://github.com/Open0Bit/SIOEI)  
-🔴 **Demo ao Vivo / Teste:** [Acesse a Sala de Teste (Google Meet)](https://meet.google.com/vtw-nrrc-coa)
+🌱 **Protótipo / Teste:** [Acesse a versão Sprout](https://www.linkedin.com/in/aegra/)
 
 ---
 
