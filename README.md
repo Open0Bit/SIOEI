@@ -1,80 +1,132 @@
-# SIOEI
-Informações para o público em geral sobre nosso projeto.
+# 📈 S.I.O.E.I.
+### Sistema Inteligente de Otimização e Execução de Investimentos
+*(Ou: Como paramos de perder dinheiro na bolsa e aprendemos a amar o Python)*
 
-# 📢 Vaga Voluntária – Equipe Oficial do Centelha  
-## 🔥 AEGRA CODE GUILD – Seleção Oficial
-
-A **AEGRA CODE GUILD** é formada por talentos que respiram engenharia de software e carregam no DNA aquilo que poucos têm:  
-a vontade real de construir, inovar e explorar limites tecnológicos.
-
-Estamos iniciando a formação da **Equipe Oficial do Centelha**, composta por **5 membros principais**.  
-Os demais continuarão como equipe de apoio, compondo uma força total de **15 pessoas unidas por propósito — não apenas por código**.
-
-E, sinceramente?  
-**Não estamos só montando equipe. Estamos convidando pessoas para entrar em uma guilda —  
-um estilo de vida, uma família que acredita no impacto que a tecnologia pode ter no Brasil.**
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)]()
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)]()
+[![Python](https://img.shields.io/badge/Made%20with-Python-blue)]()
+[![Status](https://img.shields.io/badge/Status-Beta%20Tester-orange)]()
 
 ---
 
-## 🌎 Sobre o SIOEI – Inovação para Democratizar
+## 🧐 O que é isso?
 
-O **SIOEI** é uma proposta ousada de **democratização do mercado financeiro brasileiro**, permitindo que qualquer pessoa — do iniciante ao especialista — tenha acesso a inteligência de alto nível, automação, análise avançada e recursos antes restritos a uma elite tecnológica.
+Bem-vindo ao **S.I.O.E.I.** (nós sabemos, a sigla é um trava-línguas, pode chamar de *"O Consultor Digital"*).
 
-É sobre **abrir portas**, não criar barreiras.  
-É sobre **entregar avanço tecnológico de verdade**, com uso **ético, transparente e acessível**.
+Nascemos de uma verdade inconveniente: **90% dos investidores pessoa física perdem para o CDI** ou desistem após o primeiro prejuízo. O mercado financeiro é um labirinto cheio de sopa de letrinhas (CDB, LCI, FII, XPTO) e nós, meros mortais, temos o péssimo hábito de comprar na alta (FOMO) e vender na baixa (Pânico).
 
-Se isso mexe com você… continue lendo.
+**A Solução?** Parar de tentar adivinhar o futuro e deixar a matemática fazer o trabalho pesado.
 
----
-
-# 🎯 Vaga Oficial Aberta (1 posição)
-
-## 🔹 1. **Especialista em UX/UI**  
-Um designer com olhar humano e cabeça preparada para sistemas complexos.
-
-### Buscamos alguém que:
-- Converte **complexidade em clareza**  
-- Entende que **UX é ponte, não decoração**  
-- Consegue desenhar fluxos, jornadas, interfaces e padrões  
-- Queira construir a **cara e o coração visual** do SIOEI
-
-Se você acredita que **design salva vidas (e contas bancárias)** — estamos falando com você.
+O S.I.O.E.I. é uma plataforma **FinTech de vanguarda** que utiliza **Inteligência Artificial** para analisar, otimizar e executar investimentos 24/7. É como ter um gestor de fundo de Wall Street no seu bolso, mas sem o terno caro e as taxas abusivas.
 
 ---
 
-# 💙 Por que entrar na Guilda?
+## 🚀 Links Rápidos
 
-Porque aqui, você **não é mais um nome**.  
-Você é parte da família.
-
-- 🌟 O SIOEI pode se tornar uma das soluções de maior impacto no país  
-- 🤝 Você trabalhará com pessoas que aprendem, criam e riem enquanto constroem algo sério  
-- 🚀 Você fará parte de algo que pode mudar vidas — inclusive a sua  
-- 🛠️ Você terá liberdade criativa e técnica  
-- 👥 Você estará em um ambiente que valoriza conhecimento, ética e trabalho em equipe  
+💻 **Repositório Oficial:** [github.com/Open0Bit/SIOEI](https://github.com/Open0Bit/SIOEI)  
+🔴 **Demo ao Vivo / Teste:** [Acesse a Sala de Teste (Google Meet)](https://meet.google.com/vtw-nrrc-coa)
 
 ---
 
-# ✉️ Como Participar
+## 🧠 Como Funciona (A Mágica)
 
-Envie uma mensagem privada ou e-mail com:  
-- **Nome**  
-- **Área de atuação**  
-- **Experiência relevante**  
-- **E um pequeno recado dizendo por que esse propósito falou com você**
+Não é magia, é **Engenharia de Software + Data Science**. Nossa arquitetura é modular para garantir que, se o mercado quebrar, nosso código não quebre junto.
 
-📞 WhatsApp: **(65) 9 9959-6607**  
-📧 E-mail: **aegra.code.guild.@gmail.com**
+### 1. O Cérebro Estratégico (Analysis) 🕵️
+* **O que faz:** Varre o mercado analisando mais de **500 ativos simultaneamente**.
+* **Tech:** Processamento de Linguagem Natural (NLP) para ler 1000+ notícias por dia (ele lê o *Valor Econômico* para você não precisar ler).
+* **Output:** Define se você é "Conservador" ou "Aventureiro" e monta a carteira ideal.
 
-Sinta-se à vontade para ser humano — é assim que funcionamos por aqui.
+### 2. O Braço Executor (Execution) 🦾
+* **O que faz:** O trabalho sujo. Compra, vende e rebalanceia.
+* **Diferencial:** Usa algoritmos para dividir ordens grandes e não mexer no preço (Slippage? Aqui não.).
+* **Segurança:** Stop Loss Dinâmico. Se o mercado azedar, ele puxa o freio de mão.
+
+### 3. O Dashboard (UI) 📊
+* **O que faz:** Mostra seu patrimônio crescendo (esperamos).
+* **Modos:**
+    * *Piloto Automático:* Você vive sua vida, nós cuidamos do dinheiro.
+    * *Controle Total:* Você decide, a IA apenas executa da melhor forma.
 
 ---
 
-# 🛡️ Sobre a AEGRA CODE GUILD
+## ⚔️ Humanos vs. S.I.O.E.I.
 
-Uma comunidade de desenvolvedores, designers, engenheiros e mentes inquietas que acreditam no poder da tecnologia para transformar realidades.  
-Somos mais que equipe. Somos **Guilda**.
+| Característica | Investidor Humano (Você) | S.I.O.E.I. (Nós) |
+| :--- | :--- | :--- |
+| **Emoção** | Chora no banho quando a bolsa cai | Frio e calculista 🤖 |
+| **Horário** | 9h às 17h (com pausa pro café) | 24 horas / 7 dias |
+| **Análise** | "Meu tio disse que essa ação é boa" | 500+ ativos, Big Data, ML |
+| **Custo** | Taxas de corretagem + Erros | 0,5% a 1% a.a. (Meta) |
 
 ---
 
-### ⭐ Se este projeto te tocou, talvez você já faça parte dele — só falta enviar sua mensagem.
+## 🛠️ Stack Tecnológica
+
+Construído com sangue, suor e frameworks modernos.
+
+* **Backend:** `Python (FastAPI)`, `Node.js`
+* **Frontend:** `React.js`, `Tailwind CSS` (porque tem que ser bonito)
+* **Database:** `PostgreSQL` (dados sérios), `Redis` (velocidade)
+* **AI/ML:** `Scikit-learn`, `TensorFlow`, `PyTorch`
+* **Infra:** `Docker`, `Kubernetes`, `AWS/GCP`
+
+---
+
+## 🏁 Rodando Localmente
+
+Quer ver o código rodar? Siga os passos (mas não coloque dinheiro real em `localhost`, por favor).
+
+```bash
+# Clone este repositório
+$ git clone [https://github.com/Open0Bit/SIOEI.git](https://github.com/Open0Bit/SIOEI.git)
+
+# Acesse a pasta do projeto
+$ cd SIOEI
+
+# Instale as dependências (Backend)
+$ pip install -r requirements.txt
+
+# Instale as dependências (Frontend)
+$ cd frontend && npm install
+
+# Rode a aplicação
+$ npm start
+````
+
+-----
+
+## 🗺️ Roadmap (O Futuro)
+
+  * [x] **Fase 1:** MVP Acadêmico e Validação (Estamos aqui\! 🎓)
+  * [ ] **Fase 2:** Beta Fechado com 50-100 usuários corajosos.
+  * [ ] **Fase 3:** Lançamento Freemium.
+  * [ ] **2040:** Dominação mundial ética das finanças e aposentadoria tranquila para todos.
+
+-----
+
+## 🤝 Contribuição
+
+Este projeto nasceu no ambiente acadêmico, mas tem ambições de unicórnio. Se você manja de **Python**, **Séries Temporais** ou **React**, mande seu PR\!
+
+1.  Faça um Fork do projeto
+2.  Crie sua Feature Branch (`git checkout -b feature/IncrivelFeature`)
+3.  Commit suas mudanças (`git commit -m 'Add: IncrivelFeature'`)
+4.  Push para a Branch (`git push origin feature/IncrivelFeature`)
+5.  Abra um Pull Request
+
+-----
+
+## 📄 Licença
+
+Distribuído sob a licença MIT. Veja `LICENSE` para mais informações.
+
+-----
+
+\<p align="center"\>
+\<i\>"Investir não deve ser um cassino, deve ser uma ciência." — Equipe S.I.O.E.I.\</i\>
+\</p\>
+
+```
+
+-----
