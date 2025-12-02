@@ -1,9 +1,9 @@
 """
 =============================================================================
 PROJETO: SIOEI (Sistema Inteligente de Otimização e Execução de Investimentos)
-VERSÃO: 2.7 (Educational Descriptions Restored)
-CODENAME: Sprout 🌱 - Edição Final Otimizada
-DESCRIÇÃO: Simulador completo com educacional de perfis e áreas de inflação.
+VERSÃO: 3.1 (Fix Crash on Start & Clean UI)
+CODENAME: Sprout 🌱 - Edição Conectada (Clean)
+DESCRIÇÃO: Integração com Yahoo Finance, Cache Inteligente e UI corrigida.
 AUTOR: Aegra Code Guild
 DATA: Dezembro/2025
 =============================================================================
@@ -17,12 +17,14 @@ from PIL import Image
 from io import BytesIO
 import os
 import base64
+import yfinance as yf
+import pandas as pd
 
 # ==============================================================================
 # 1. CONFIGURAÇÃO DA PÁGINA
 # ==============================================================================
 st.set_page_config(
-    page_title="SIOEI - Sprout Realista", 
+    page_title="SIOEI - Sprout Conectado", 
     layout="wide", 
     page_icon="💰"
 )
@@ -88,184 +90,148 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 3. BASE DE DADOS (CALIBRAGEM REALISTA & STRATEGY)
+# 3. BASE DE DADOS HÍBRIDA (LIVE + STATIC)
 # ==============================================================================
 plt.style.use('dark_background')
 
+# Dicionário de Tickers para mapeamento (Yahoo Finance)
+TICKERS_MAP = {
+    'ETF Ibovespa (BOVA11)': 'BOVA11.SA',
+    'Ações EUA (S&P500)': 'IVVB11.SA', 
+    'Tech Stocks (Nasdaq)': 'NASD11.SA',
+    'Bitcoin (BTC)': 'BTC-USD',
+    'Ethereum/Altcoins': 'ETH-USD',
+    'Ouro / Dólar': 'GOLD11.SA',
+    'FIIs (Tijolo)': 'IFIX', 
+    'Ações (Dividendos)': 'IDIV' 
+}
+
+# Função de Cache Inteligente (Atualiza a cada 12 horas para não pesar)
+@st.cache_data(ttl=43200, show_spinner=False)
+def obter_retornos_live():
+    dados_live = {}
+    tickers = list(TICKERS_MAP.values())
+    valid_tickers = [t for t in tickers if t not in ['IFIX', 'IDIV']]
+    
+    try:
+        data = yf.download(valid_tickers, period="1y", interval="1d", progress=False)['Adj Close']
+        
+        for nome, ticker in TICKERS_MAP.items():
+            if ticker in valid_tickers and ticker in data.columns:
+                try:
+                    preco_inicial = data[ticker].iloc[0]
+                    preco_final = data[ticker].iloc[-1]
+                    if pd.notna(preco_inicial) and pd.notna(preco_final) and preco_inicial > 0:
+                        retorno_pct = ((preco_final / preco_inicial) - 1) * 100
+                        if -90 < retorno_pct < 200: 
+                            dados_live[nome] = retorno_pct
+                except:
+                    pass
+    except:
+        pass
+    return dados_live
+
+# --- EXECUÇÃO DO FETCHING (Silencioso) ---
+LIVE_RETURNS = obter_retornos_live()
+
+# BASE DE DADOS PADRÃO 
 ATIVOS = {
     # --- RENDA FIXA ---
     'Tesouro Selic': {
-        'retorno': 10.75, 
-        'risco': 1, 
-        'taxa': 1.65,     
-        'tipo': 'RF', 'mercado': '🏦 Mercado Monetário', 'cor': '#4CAF50', 'desc': 'Soberano. Liquidez imediata.'
+        'retorno': 10.75, 'risco': 1, 'taxa': 1.65, 'tipo': 'RF', 'mercado': '🏦 Mercado Monetário', 'cor': '#4CAF50', 'desc': 'Soberano. Liquidez imediata.'
     },
     'CDB Liquidez Diária': {
-        'retorno': 10.65, 
-        'risco': 1, 
-        'taxa': 1.60,     
-        'tipo': 'RF', 'mercado': '🏦 Mercado Monetário', 'cor': '#03A9F4', 'desc': 'Reserva bancária.'
+        'retorno': 10.65, 'risco': 1, 'taxa': 1.60, 'tipo': 'RF', 'mercado': '🏦 Mercado Monetário', 'cor': '#03A9F4', 'desc': 'Reserva bancária.'
     },
     'Tesouro Prefixado': {
-        'retorno': 12.50, 
-        'risco': 4, 
-        'taxa': 1.70,     
-        'tipo': 'RF', 'mercado': '🏛️ Títulos Públicos', 'cor': '#CDDC39', 'desc': 'Taxa travada na compra.'
+        'retorno': 12.50, 'risco': 4, 'taxa': 1.70, 'tipo': 'RF', 'mercado': '🏛️ Títulos Públicos', 'cor': '#CDDC39', 'desc': 'Taxa travada na compra.'
     },
     'Tesouro IPCA+ (Curto)': {
-        'retorno': 10.50, 
-        'risco': 2, 
-        'taxa': 1.60,     
-        'tipo': 'RF', 'mercado': '🏛️ Títulos Públicos', 'cor': '#FFEB3B', 'desc': 'Proteção contra inflação.'
+        'retorno': 10.50, 'risco': 2, 'taxa': 1.60, 'tipo': 'RF', 'mercado': '🏛️ Títulos Públicos', 'cor': '#FFEB3B', 'desc': 'Proteção contra inflação.'
     },
     'Tesouro IPCA+ (Longo)': {
-        'retorno': 10.80, 
-        'risco': 5, 
-        'taxa': 1.65, 
-        'tipo': 'RF', 'mercado': '🏛️ Títulos Públicos', 'cor': '#FF9800', 'desc': 'Aposentadoria (Volátil).'
+        'retorno': 10.80, 'risco': 5, 'taxa': 1.65, 'tipo': 'RF', 'mercado': '🏛️ Títulos Públicos', 'cor': '#FF9800', 'desc': 'Aposentadoria (Volátil).'
     },
     'Tesouro Renda+': {
-        'retorno': 11.00, 
-        'risco': 3, 
-        'taxa': 0.50,     
-        'tipo': 'RF', 'mercado': '🏛️ Títulos Públicos', 'cor': '#FF5722', 'desc': 'Fluxo de renda futura.'
+        'retorno': 11.00, 'risco': 3, 'taxa': 0.50, 'tipo': 'RF', 'mercado': '🏛️ Títulos Públicos', 'cor': '#FF5722', 'desc': 'Fluxo de renda futura.'
     },
     'LCI/LCA (Isento)': {
-        'retorno': 9.60,  
-        'risco': 2, 
-        'taxa': 0.00,     # ISENTO
-        'tipo': 'RF', 'mercado': '💳 Mercado de Crédito', 'cor': '#0288D1', 'desc': 'Isento de IR. Eficiente.'
+        'retorno': 9.60, 'risco': 2, 'taxa': 0.00, 'tipo': 'RF', 'mercado': '💳 Mercado de Crédito', 'cor': '#0288D1', 'desc': 'Isento de IR. Eficiente.'
     },
     'CDB Banco Médio': {
-        'retorno': 12.80, 
-        'risco': 3, 
-        'taxa': 1.90,     
-        'tipo': 'RF', 'mercado': '💳 Mercado de Crédito', 'cor': '#01579B', 'desc': 'Retorno alto, mas tributado.'
+        'retorno': 12.80, 'risco': 3, 'taxa': 1.90, 'tipo': 'RF', 'mercado': '💳 Mercado de Crédito', 'cor': '#01579B', 'desc': 'Retorno alto, mas tributado.'
     },
     'Debêntures Incent.': {
-        'retorno': 11.50, 
-        'risco': 5, 
-        'taxa': 0.30,     # ISENTO (Spread apenas)
-        'tipo': 'RF', 'mercado': '💳 Mercado de Crédito', 'cor': '#E91E63', 'desc': 'Crédito Privado Isento.'
+        'retorno': 11.50, 'risco': 5, 'taxa': 0.30, 'tipo': 'RF', 'mercado': '💳 Mercado de Crédito', 'cor': '#E91E63', 'desc': 'Crédito Privado Isento.'
     },
     'CRI/CRA (High Yield)': {
-        'retorno': 14.50, 
-        'risco': 8, 
-        'taxa': 2.00,     
-        'tipo': 'RF', 'mercado': '💳 Mercado de Crédito', 'cor': '#C2185B', 'desc': 'Alto Risco/Retorno.'
+        'retorno': 14.50, 'risco': 8, 'taxa': 2.00, 'tipo': 'RF', 'mercado': '💳 Mercado de Crédito', 'cor': '#C2185B', 'desc': 'Alto Risco/Retorno.'
     },
     'Fundo Multimercado': {
-        'retorno': 12.50, 
-        'risco': 5, 
-        'taxa': 3.50,     
-        'tipo': 'RF', 'mercado': '📊 Fundos', 'cor': '#9C27B0', 'desc': 'Gestão ativa (Custos altos).'
+        'retorno': 12.50, 'risco': 5, 'taxa': 3.50, 'tipo': 'RF', 'mercado': '📊 Fundos', 'cor': '#9C27B0', 'desc': 'Gestão ativa (Custos altos).'
     },
 
-    # --- RENDA VARIÁVEL ---
+    # --- RENDA VARIÁVEL (Live se disponível) ---
     'Ações (Dividendos)': {
-        'retorno': 14.50, 
-        'risco': 6, 
-        'taxa': 0.10,     
-        'tipo': 'RV', 'mercado': '🏢 Mercado de Capitais', 'cor': '#00BCD4', 'desc': 'Vacas Leiteiras.'
+        'retorno': LIVE_RETURNS.get('Ações (Dividendos)', 14.50),
+        'risco': 6, 'taxa': 0.10, 'tipo': 'RV', 'mercado': '🏢 Mercado de Capitais', 'cor': '#00BCD4', 'desc': 'Vacas Leiteiras (Proxy IDIV).'
     },
     'Ações (Small Caps)': {
-        'retorno': 18.00, 
-        'risco': 9, 
-        'taxa': 2.50,     
-        'tipo': 'RV', 'mercado': '🏢 Mercado de Capitais', 'cor': '#0097A7', 'desc': 'Crescimento Agressivo.'
+        'retorno': 18.00,
+        'risco': 9, 'taxa': 2.50, 'tipo': 'RV', 'mercado': '🏢 Mercado de Capitais', 'cor': '#0097A7', 'desc': 'Crescimento Agressivo.'
     },
     'ETF Ibovespa (BOVA11)': {
-        'retorno': 14.00, 
-        'risco': 7, 
-        'taxa': 2.10,     
-        'tipo': 'RV', 'mercado': '🏢 Mercado de Capitais', 'cor': '#006064', 'desc': 'Índice Brasil.'
+        'retorno': LIVE_RETURNS.get('ETF Ibovespa (BOVA11)', 14.00),
+        'risco': 7, 'taxa': 2.10, 'tipo': 'RV', 'mercado': '🏢 Mercado de Capitais', 'cor': '#006064', 'desc': 'Índice Brasil (Live).'
     },
     'FIIs (Tijolo)': {
         'retorno': 12.50, 
-        'risco': 4, 
-        'taxa': 0.00,     
-        'tipo': 'RV', 'mercado': '🏗️ Imobiliário & Agro', 'cor': '#BA68C8', 'desc': 'Aluguel Isento.'
+        'risco': 4, 'taxa': 0.00, 'tipo': 'RV', 'mercado': '🏗️ Imobiliário & Agro', 'cor': '#BA68C8', 'desc': 'Aluguel Isento.'
     },
     'FIIs (Papel)': {
         'retorno': 13.50, 
-        'risco': 5, 
-        'taxa': 0.20,     
-        'tipo': 'RV', 'mercado': '🏗️ Imobiliário & Agro', 'cor': '#8E24AA', 'desc': 'Juros compostos mensais.'
+        'risco': 5, 'taxa': 0.20, 'tipo': 'RV', 'mercado': '🏗️ Imobiliário & Agro', 'cor': '#8E24AA', 'desc': 'Juros compostos mensais.'
     },
     'Fiagro (Agronegócio)': {
         'retorno': 14.20, 
-        'risco': 6, 
-        'taxa': 0.50,     
-        'tipo': 'RV', 'mercado': '🏗️ Imobiliário & Agro', 'cor': '#4A148C', 'desc': 'Dividendos do Agro.'
+        'risco': 6, 'taxa': 0.50, 'tipo': 'RV', 'mercado': '🏗️ Imobiliário & Agro', 'cor': '#4A148C', 'desc': 'Dividendos do Agro.'
     },
     'Ações EUA (S&P500)': {
-        'retorno': 16.00, 
-        'risco': 6, 
-        'taxa': 2.75,     
-        'tipo': 'RV', 'mercado': '🌎 Internacional', 'cor': '#3F51B5', 'desc': 'Economia Americana.'
+        'retorno': LIVE_RETURNS.get('Ações EUA (S&P500)', 16.00),
+        'risco': 6, 'taxa': 2.75, 'tipo': 'RV', 'mercado': '🌎 Internacional', 'cor': '#3F51B5', 'desc': 'S&P 500 (Live via IVVB11).'
     },
     'Tech Stocks (Nasdaq)': {
-        'retorno': 18.00, 
-        'risco': 8, 
-        'taxa': 2.80,     
-        'tipo': 'RV', 'mercado': '🌎 Internacional', 'cor': '#304FFE', 'desc': 'Tecnologia Global.'
+        'retorno': LIVE_RETURNS.get('Tech Stocks (Nasdaq)', 18.00),
+        'risco': 8, 'taxa': 2.80, 'tipo': 'RV', 'mercado': '🌎 Internacional', 'cor': '#304FFE', 'desc': 'Nasdaq (Live via NASD11).'
     },
     'REITs (Imóveis EUA)': {
         'retorno': 15.00, 
-        'risco': 6, 
-        'taxa': 3.30,     
-        'tipo': 'RV', 'mercado': '🌎 Internacional', 'cor': '#1A237E', 'desc': 'Imóveis em Dólar.'
+        'risco': 6, 'taxa': 3.30, 'tipo': 'RV', 'mercado': '🌎 Internacional', 'cor': '#1A237E', 'desc': 'Imóveis em Dólar.'
     },
     'Ouro / Dólar': {
-        'retorno': 8.50,  
-        'risco': 4, 
-        'taxa': 1.00,     
-        'tipo': 'RV', 'mercado': '💱 Alternativos', 'cor': '#FFD700', 'desc': 'Proteção (Hedge).'
+        'retorno': LIVE_RETURNS.get('Ouro / Dólar', 8.50),  
+        'risco': 4, 'taxa': 1.00, 'tipo': 'RV', 'mercado': '💱 Alternativos', 'cor': '#FFD700', 'desc': 'Ouro (Live via GOLD11).'
     },
     'Bitcoin (BTC)': {
-        'retorno': 30.00, 
-        'risco': 9, 
-        'taxa': 4.50,     
-        'tipo': 'RV', 'mercado': '💱 Alternativos', 'cor': '#F44336', 'desc': 'Reserva de valor digital.'
+        'retorno': LIVE_RETURNS.get('Bitcoin (BTC)', 30.00),
+        'risco': 9, 'taxa': 4.50, 'tipo': 'RV', 'mercado': '💱 Alternativos', 'cor': '#F44336', 'desc': 'Crypto Live (USD).'
     },
     'Ethereum/Altcoins': {
-        'retorno': 35.00, 
-        'risco': 10,
-        'taxa': 5.00,     
-        'tipo': 'RV', 'mercado': '💱 Alternativos', 'cor': '#B71C1C', 'desc': 'Risco Extremo.'
+        'retorno': LIVE_RETURNS.get('Ethereum/Altcoins', 35.00), 
+        'risco': 10, 'taxa': 5.00, 'tipo': 'RV', 'mercado': '💱 Alternativos', 'cor': '#B71C1C', 'desc': 'Crypto Live (USD).'
     }
 }
 
-# --- PERFIS OTIMIZADOS E DESCRITIVOS ---
 PERFIS = {
-    'Conservador 🛡️': {
-        'LCI/LCA (Isento)': 40, 
-        'Tesouro Selic': 30, 
-        'Debêntures Incent.': 15, 
-        'Tesouro IPCA+ (Curto)': 15
-    },
-    'Moderado ⚖️': {
-        'Debêntures Incent.': 25, 
-        'FIIs (Papel)': 20, 
-        'Fiagro (Agronegócio)': 15, 
-        'Fundo Multimercado': 10, 
-        'Ações (Dividendos)': 15, 
-        'Tesouro IPCA+ (Longo)': 15
-    },
-    'Agressivo 🚀': {
-        'Ações (Small Caps)': 20, 
-        'Bitcoin (BTC)': 15, 
-        'Tech Stocks (Nasdaq)': 20, 
-        'FIIs (Tijolo)': 15, 
-        'CRI/CRA (High Yield)': 15, 
-        'Tesouro IPCA+ (Longo)': 15
-    }
+    'Conservador 🛡️': {'LCI/LCA (Isento)': 40, 'Tesouro Selic': 30, 'Debêntures Incent.': 15, 'Tesouro IPCA+ (Curto)': 15},
+    'Moderado ⚖️': {'Debêntures Incent.': 25, 'FIIs (Papel)': 20, 'Fiagro (Agronegócio)': 15, 'Fundo Multimercado': 10, 'Ações (Dividendos)': 15, 'Tesouro IPCA+ (Longo)': 15},
+    'Agressivo 🚀': {'Ações (Small Caps)': 20, 'Bitcoin (BTC)': 15, 'Tech Stocks (Nasdaq)': 20, 'FIIs (Tijolo)': 15, 'CRI/CRA (High Yield)': 15, 'Tesouro IPCA+ (Longo)': 15}
 }
 
 DESCRICOES_PERFIS = {
-    'Conservador 🛡️': 'Foco em PRESERVAÇÃO DE CAPITAL. Alocação majoritária em Renda Fixa Isenta (LCI/LCA) para superar o CDI líquido sem correr riscos desnecessários.',
-    'Moderado ⚖️': 'Equilíbrio entre Segurança e Retorno. Introduz "pimentas" de Renda Variável (FIIs) e Crédito Privado para buscar ganho real acima da inflação.',
-    'Agressivo 🚀': 'Foco em MULTIPLICAÇÃO DE PATRIMÔNIO. Aceita alta volatilidade para buscar retornos expressivos no longo prazo com Ações, Crypto e Dolarização.'
+    'Conservador 🛡️': 'Foco em PRESERVAÇÃO DE CAPITAL. Alocação majoritária em Renda Fixa Isenta.',
+    'Moderado ⚖️': 'Equilíbrio entre Segurança e Retorno. "Pimentas" de Renda Variável para ganho real.',
+    'Agressivo 🚀': 'Foco em MULTIPLICAÇÃO. Alta volatilidade com Ações, Crypto e Dolarização.'
 }
 
 TESES = {
@@ -278,7 +244,7 @@ TESES = {
 }
 
 # ==============================================================================
-# 4. MOTOR MATEMÁTICO
+# 4. MOTOR MATEMÁTICO (CORREÇÃO DE BUG "RETORNO_REAL")
 # ==============================================================================
 def calcular(pesos_dict, v_inicial, v_mensal, anos, renda_desejada=0, anos_inicio_retirada=99, usar_retirada=False):
     inflacao_aa = 4.50
@@ -299,7 +265,8 @@ def calcular(pesos_dict, v_inicial, v_mensal, anos, renda_desejada=0, anos_inici
         retorno_bruto_ponderado = taxa_poupanca
         custo_ponderado = 0
         risco_pond = 0.5
-        ativos_usados = [{'nome': 'Dinheiro Parado (Poupança)', 'peso': 100, 'cor': '#757575', 'desc': 'DINHEIRO PARADO! Perdendo valor para inflação.', 'mercado': '⚠️ Alerta'}]
+        # --- AQUI ESTAVA O BUG: Faltava o 'retorno_real' no dicionário de fallback ---
+        ativos_usados = [{'nome': 'Dinheiro Parado (Poupança)', 'peso': 100, 'cor': '#757575', 'desc': 'DINHEIRO PARADO! Perdendo valor para inflação.', 'mercado': '⚠️ Alerta', 'retorno_real': taxa_poupanca}]
     else:
         for nome, peso in pesos_dict.items():
             if peso > 0:
@@ -308,7 +275,7 @@ def calcular(pesos_dict, v_inicial, v_mensal, anos, renda_desejada=0, anos_inici
                 retorno_bruto_ponderado += info['retorno'] * peso_real
                 custo_ponderado += info['taxa'] * peso_real
                 risco_pond += info['risco'] * peso_real
-                ativos_usados.append({'nome': nome, 'peso': peso_real*100, 'cor': info['cor'], 'desc': info['desc'], 'mercado': info['mercado']})
+                ativos_usados.append({'nome': nome, 'peso': peso_real*100, 'cor': info['cor'], 'desc': info['desc'], 'mercado': info['mercado'], 'retorno_real': info['retorno']})
     
     retorno_liquido_aa = retorno_bruto_ponderado - custo_ponderado
     meses = anos * 12
@@ -330,17 +297,14 @@ def calcular(pesos_dict, v_inicial, v_mensal, anos, renda_desejada=0, anos_inici
         if usar_retirada and m >= mes_inicio_retirada:
             fluxo = v_mensal - renda_desejada
         
-        # Carteira
         y_cart_nom.append(y_cart_nom[-1] * (1 + tx_cart) + fluxo)
         fator_real_cart = (1 + tx_cart) / (1 + tx_inf)
         y_cart_real.append(y_cart_real[-1] * fator_real_cart + fluxo)
         
-        # CDI (Calculado Bruto para Benchmark Nominal, mas Real desconta inflação)
         y_cdi_nom.append(y_cdi_nom[-1] * (1 + tx_cdi) + fluxo)
         fator_real_cdi = (1 + tx_cdi) / (1 + tx_inf)
         y_cdi_real.append(y_cdi_real[-1] * fator_real_cdi + fluxo)
         
-        # Poupança
         y_poup_nom.append(y_poup_nom[-1] * (1 + tx_poup) + fluxo)
         fator_real_poup = (1 + tx_poup) / (1 + tx_inf)
         y_poup_real.append(y_poup_real[-1] * fator_real_poup + fluxo)
@@ -431,11 +395,8 @@ anos = c3.slider("Prazo (Anos)", 1, 40, 10)
 
 if modo == "Automático":
     perfil_sel = st.selectbox("Selecione seu Perfil (CVM Suitability):", list(PERFIS.keys()), key="sel_perfil", on_change=atualizar_reativo)
-    
-    # --- AQUI ESTÁ A CORREÇÃO: DESCRIÇÃO EDUCACIONAL DE VOLTA ---
     desc_texto = DESCRICOES_PERFIS.get(perfil_sel, "Perfil personalizado.")
     st.info(f"💡 **{perfil_sel}**: {desc_texto}")
-    
     if sum([st.session_state[f"sl_{k}"] for k in ATIVOS]) == 0: atualizar_reativo()
 elif modo == "Assistido":
     st.selectbox("Selecione a Estratégia:", list(TESES.keys()), key="sel_tese", on_change=atualizar_reativo)
@@ -454,7 +415,11 @@ with st.expander("🎛️ AJUSTE FINO DA CARTEIRA (Clique para Abrir/Fechar)", e
                 ativos_mercado = [k for k, v in ATIVOS.items() if v['mercado'] == merc]
                 cols = st.columns(3)
                 for i, k in enumerate(ativos_mercado):
-                    with cols[i%3]: st.slider(k, 0, 100, key=f"sl_{k}")
+                    with cols[i%3]: 
+                        valor_atual = ATIVOS[k]['retorno']
+                        is_live = k in LIVE_RETURNS
+                        label_emoji = "🟢" if is_live else "🔧"
+                        st.slider(f"{k} ({label_emoji} {valor_atual:.2f}%)", 0, 100, key=f"sl_{k}")
                     
     with t1: gerar_sliders_educativos('RF', st)
     with t2: gerar_sliders_educativos('RV', st)
@@ -488,12 +453,8 @@ with dashboard_container:
     k1, k2, k3, k4 = st.columns(4)
 
     COLORS = {
-        "neutral": "#E0E0E0",
-        "success": "#00CC96",
-        "warning": "#FDD835",
-        "danger":  "#FF4B4B",
-        "primary": "#29B6F6",
-        "blue_light": "#81D4FA"
+        "neutral": "#E0E0E0", "success": "#00CC96", "warning": "#FDD835",
+        "danger":  "#FF4B4B", "primary": "#29B6F6", "blue_light": "#81D4FA"
     }
 
     cdi_final = d['y_cdi_nom'][-1]
@@ -510,37 +471,18 @@ with dashboard_container:
         if numer > 0 and denom <= 0: return (numer / 0.01) * 100 
         return (numer / denom_safe) * 100
 
-    def fmt_pct(val):
-        s = f"{val:,.0f}"
-        return s.replace(",", ".")
+    def fmt_pct(val): return f"{val:,.0f}".replace(",", ".")
 
-    # Comparativo CDI (Baseado no Nominal Líquido vs CDI Bruto)
     if lucro_nominal < 0:
-        cor_cdi_header = COLORS["danger"]
-        txt_cdi_header = "📉 Prejuízo"
-        cor_geral_card = COLORS["danger"]
+        cor_cdi_header = COLORS["danger"]; txt_cdi_header = "📉 Prejuízo"; cor_geral_card = COLORS["danger"]
     elif lucro_nominal < lucro_cdi:
-        cor_cdi_header = COLORS["warning"]
-        pct = calc_percent(lucro_nominal, lucro_cdi)
-        txt_cdi_header = f"⚠️ {fmt_pct(pct)}% do CDI"
-        cor_geral_card = COLORS["warning"]
+        cor_cdi_header = COLORS["warning"]; pct = calc_percent(lucro_nominal, lucro_cdi); txt_cdi_header = f"⚠️ {fmt_pct(pct)}% do CDI"; cor_geral_card = COLORS["warning"]
     else:
-        cor_cdi_header = COLORS["success"]
-        pct = calc_percent(lucro_nominal, lucro_cdi)
-        txt_cdi_header = f"🚀 {fmt_pct(pct)}% do CDI"
-        cor_geral_card = COLORS["success"]
+        cor_cdi_header = COLORS["success"]; pct = calc_percent(lucro_nominal, lucro_cdi); txt_cdi_header = f"🚀 {fmt_pct(pct)}% do CDI"; cor_geral_card = COLORS["success"]
 
-    if lucro_nominal < 0:
-        cor_poup_header = COLORS["danger"]
-        txt_poup_header = "📉 Prejuízo"
-    elif lucro_nominal == lucro_poup:
-        cor_poup_header = COLORS["warning"]
-        pct_p = calc_percent(lucro_nominal, lucro_poup)
-        txt_poup_header = f"⚠️ {fmt_pct(pct_p)}% da Poupança"
-    else:
-        cor_poup_header = COLORS["success"]
-        pct_p = calc_percent(lucro_nominal, lucro_poup)
-        txt_poup_header = f"📈 {fmt_pct(pct_p)}% da Poupança"
+    if lucro_nominal < 0: cor_poup_header = COLORS["danger"]; txt_poup_header = "📉 Prejuízo"
+    elif lucro_nominal == lucro_poup: cor_poup_header = COLORS["warning"]; pct_p = calc_percent(lucro_nominal, lucro_poup); txt_poup_header = f"⚠️ {fmt_pct(pct_p)}% da Poupança"
+    else: cor_poup_header = COLORS["success"]; pct_p = calc_percent(lucro_nominal, lucro_poup); txt_poup_header = f"📈 {fmt_pct(pct_p)}% da Poupança"
 
     sinal_nominal = "-" if lucro_nominal < 0 else "+"
     sinal_real = "-" if lucro_real < 0 else "+"
@@ -579,12 +521,8 @@ with dashboard_container:
     if d['is_poup']:
         st.warning("⚠️ MODO POUPANÇA (CARTEIRA VAZIA). Adicione ativos ou escolha uma estratégia.")
 
-    # --- ÁREA DE GRÁFICOS (VISUAL FILL RESTORED) ---
     st.markdown(f"""
-    <div style="
-        display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; 
-        margin-top: 10px; margin-bottom: 10px; 
-        background-color: #262730; padding: 12px; border-radius: 5px; border: 1px solid #444; width: 100%;">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-top: 10px; margin-bottom: 10px; background-color: #262730; padding: 12px; border-radius: 5px; border: 1px solid #444; width: 100%;">
         <div style="font-size: 16px; font-weight: bold; color: #E0E0E0; margin-right: 10px;">📊 Raio-X: Nominal vs Real ({anos} Anos)</div>
         <div style="font-size: 13px; font-family: sans-serif; font-weight: bold; white-space: nowrap;">
             <span style="color: {cor_cdi_header}; margin-right: 15px;">{txt_cdi_header}</span>
@@ -597,35 +535,26 @@ with dashboard_container:
 
     with g1:
         fig, ax = plt.subplots(figsize=(10, 4))
-        COR_CART = cor_geral_card
-        COR_CDI = '#FFD700'
-        COR_POUP = '#FF5722'
+        COR_CART = cor_geral_card; COR_CDI = '#FFD700'; COR_POUP = '#FF5722'
 
-        # Plot da Carteira
         if not d['is_poup']:
             ax.plot(d['x'], d['y_cart_nom'], color=COR_CART, linewidth=2, label='Carteira (Nominal)')
             ax.plot(d['x'], d['y_cart_real'], color=COR_CART, linewidth=1, linestyle=':', alpha=0.5)
-            # Fill Carteira (Cor forte)
             ax.fill_between(d['x'], d['y_cart_nom'], d['y_cart_real'], color=COR_CART, alpha=0.15, label='Perda Inflação (Cart)')
         
-        # Plot do CDI
         ax.plot(d['x'], d['y_cdi_nom'], color=COR_CDI, linewidth=1.5, linestyle='--', alpha=0.7, label='CDI (Nominal)')
         ax.plot(d['x'], d['y_cdi_real'], color=COR_CDI, linewidth=0.5, linestyle=':', alpha=0.3)
-        # Fill CDI (Amarelo transparente)
         ax.fill_between(d['x'], d['y_cdi_nom'], d['y_cdi_real'], color=COR_CDI, alpha=0.08)
         
-        # Plot da Poupança
         style_poup = '-' if d['is_poup'] else ':'
         alpha_line = 0.9 if d['is_poup'] else 0.5
         ax.plot(d['x'], d['y_poup_nom'], color=COR_POUP, linewidth=1.5, linestyle=style_poup, alpha=alpha_line, label='Poupança (Nominal)')
         ax.plot(d['x'], d['y_poup_real'], color=COR_POUP, linewidth=0.5, linestyle=':', alpha=0.3)
-        # Fill Poupança (Laranja transparente)
         ax.fill_between(d['x'], d['y_poup_nom'], d['y_poup_real'], color=COR_POUP, alpha=0.08)
         
         ax.legend(loc='upper left', frameon=False, ncol=2, fontsize='x-small')
         ax.grid(True, alpha=0.1)
         ax.spines['top'].set_visible(False); ax.spines['right'].set_visible(False); ax.spines['bottom'].set_color('#444'); ax.spines['left'].set_color('#444'); ax.tick_params(colors='#aaa')
-        
         st.pyplot(fig, use_container_width=True)
 
     with g2:
@@ -639,41 +568,36 @@ with dashboard_container:
         st.pyplot(fig2, use_container_width=True)
 
 with raiox_container:
-    st.markdown("### 🧠 Raio-X da Estratégia")
+    st.markdown("### 🧠 Raio-X da Estratégia (Live Data Check)")
     for item in d['ativos']:
-        c1, c2 = st.columns([1, 4])
-        c1.markdown(f"<span style='color:{item['cor']}; font-weight:bold;'>● {item['nome']}</span>", unsafe_allow_html=True)
-        c2.caption(f"**{item['mercado']}** • {item['desc']}")
+        is_live = item['nome'] in LIVE_RETURNS
+        tag_live = "<span style='color:#00E676; font-size:10px; border:1px solid #00E676; padding:1px 4px; border-radius:3px;'>LIVE</span>" if is_live else "<span style='color:#757575; font-size:10px; border:1px solid #757575; padding:1px 4px; border-radius:3px;'>ESTIMADO</span>"
+        
+        c1, c2 = st.columns([1.2, 3.8])
+        c1.markdown(f"<span style='color:{item['cor']}; font-weight:bold;'>● {item['nome']}</span><br>{tag_live}", unsafe_allow_html=True)
+        c2.caption(f"**{item['mercado']}** • Retorno Base: **{item['retorno_real']:.2f}%** a.a. • {item['desc']}")
         st.markdown("<hr style='margin: 5px 0; border-color: #333;'>", unsafe_allow_html=True)
 
 if check_aposentadoria:
     st.markdown("### 🏖️ Análise de Viabilidade (Resultados)")
-    
-    if d['taxa_real_mensal'] > 0 and renda_desejada > 0:
-        patrimonio_necessario = renda_desejada / d['taxa_real_mensal']
-    else:
-        patrimonio_necessario = 0
-        
+    if d['taxa_real_mensal'] > 0 and renda_desejada > 0: patrimonio_necessario = renda_desejada / d['taxa_real_mensal']
+    else: patrimonio_necessario = 0
     saldo_final_real = d['final_real']
     atingiu = saldo_final_real >= patrimonio_necessario and saldo_final_real > 0
-    
-    if patrimonio_necessario > 0:
-        prog = min(1.0, max(0.0, saldo_final_real / patrimonio_necessario))
-    else:
-        prog = 0.0
+    prog = min(1.0, max(0.0, saldo_final_real / patrimonio_necessario)) if patrimonio_necessario > 0 else 0.0
         
     if atingiu:
         st.success(f"🚀 **META ATINGIDA!** Sua carteira suporta a retirada e ainda cresce.")
         st.progress(prog, text=f"Sustentabilidade: {prog*100:.1f}%")
     else:
-        if saldo_final_real < d['investido']:
-            st.error("📉 **ALERTA CRÍTICO:** As retiradas estão consumindo seu patrimônio principal.")
-        else:
-            st.warning(f"⚠️ **Atenção:** Você tem saldo, mas não o suficiente para viver apenas de renda passiva perpétua.")
-        
+        if saldo_final_real < d['investido']: st.error("📉 **ALERTA CRÍTICO:** As retiradas estão consumindo seu patrimônio principal.")
+        else: st.warning(f"⚠️ **Atenção:** Você tem saldo, mas não o suficiente para viver apenas de renda passiva perpétua.")
         st.progress(prog, text=f"Cobertura da Meta de Independência: {prog*100:.1f}%")
         st.caption(f"Para uma renda perpétua de R$ {renda_desejada}, você precisaria de R$ {patrimonio_necessario:,.2f} acumulados.")
 
+# ==============================================================================
+# 9. RODAPÉ (CRÉDITOS RESTAURADOS)
+# ==============================================================================
 st.markdown("""
 <div style='text-align: center; margin-top: 50px; color: #888; font-size: 14px;'>
     <hr style='border: 1px solid #333;'>
