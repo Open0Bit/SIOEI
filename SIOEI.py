@@ -1,7 +1,7 @@
 """
 =============================================================================
 PROJETO: SIOEI (Sistema Inteligente de Otimização e Execução de Investimentos)
-VERSÃO: 1.0
+VERSÃO: 2.0 (Final Icon Sync)
 CODENAME: Sprout 🌱
 DESCRIÇÃO: Simulador de alocação de ativos, projeção de juros compostos,
            análise de independência financeira e comparação de cenários.
@@ -25,13 +25,12 @@ import base64
 st.set_page_config(
     page_title="SIOEI - Sprout", 
     layout="wide", 
-    page_icon="💰"
+    page_icon="SIOEI-LOGO.ico"
 )
 
 # ==============================================================================
 # 2. ESTILIZAÇÃO (CSS & DARK MODE)
 # ==============================================================================
-# Define a aparência escura, cartões de métricas e o hack de posicionamento do logo.
 st.markdown("""
 <style>
     /* Fundo e Texto Principal */
@@ -39,31 +38,30 @@ st.markdown("""
     
     /* Estilo dos Cards de Métricas (Topo) */
     .metric-card {
-        background-color: #262730; border: 1px solid #444; padding: 15px;
-        border-radius: 10px; text-align: center; margin-bottom: 10px;
+        background-color: #262730; 
+        border: 1px solid #444; 
+        padding: 15px;
+        border-radius: 10px; 
+        text-align: center; 
+        margin-bottom: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        height: 140px; 
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
     }
-    .metric-main { font-size: 26px; font-weight: bold; color: white; }
-    .metric-sub { font-size: 13px; margin-top: 2px; opacity: 0.8; font-family: monospace; }
-    .metric-label { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+    .metric-main { font-size: 24px; font-weight: bold; color: white; margin: 5px 0; }
+    .metric-sub { font-size: 12px; margin-top: 2px; opacity: 0.9; font-family: sans-serif; }
+    .metric-detail { font-size: 11px; margin-top: 8px; opacity: 0.7; font-family: monospace; color: #E0E0E0; border-top: 1px solid #444; padding-top: 4px; width: 100%; }
+    .metric-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; font-weight: 700; }
     
     /* Ajustes de Widgets */
     div.stButton > button { width: 100%; }
-    div.row-widget.stRadio > label { display: none; } /* Esconde label do rádio para layout limpo */
+    div.row-widget.stRadio > label { display: none; }
     .streamlit-expanderHeader { font-size: 14px; color: #90CAF9; }
-    
-    /* Box Decorativo (Legado SIOEI) */
-    .sioei-box {
-        border: 1px solid #1b5e20;
-        border-radius: 10px;
-        padding: 20px;
-        background-color: #0d1117;
-        margin-top: 30px;
-        margin-bottom: 30px;
-    }
 
     /* --- POSICIONAMENTO DO LOGO (RESPONSIVO) --- */
-    /* Garante que o logo fique fixo no canto superior direito,
-       evitando que caia para baixo dos botões em telas mobile (vertical) */
     .logo-container {
         position: absolute;
         top: -45px;
@@ -71,14 +69,9 @@ st.markdown("""
         z-index: 1000;
     }
     
-    /* Media Query: Ajuste fino para telas pequenas (Celulares) */
     @media (max-width: 640px) {
-        .logo-container img {
-            width: 100px !important; /* Reduz tamanho no mobile */
-        }
-        .logo-container {
-            top: -40px; /* Ajusta altura no mobile */
-        }
+        .logo-container img { width: 100px !important; }
+        .logo-container { top: -40px; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -88,7 +81,6 @@ st.markdown("""
 # ==============================================================================
 plt.style.use('dark_background')
 
-# Dicionário mestre de ativos com suas rentabilidades projetadas e metadados.
 ATIVOS = {
     # --- RENDA FIXA ---
     'Tesouro Selic':        {'retorno': 10.75, 'risco': 1, 'taxa': 0.20, 'tipo': 'RF', 'mercado': '🏦 Mercado Monetário', 'cor': '#4CAF50', 'desc': 'Risco Zero. Liquidez diária.'},
@@ -118,14 +110,12 @@ ATIVOS = {
     'Ethereum/Altcoins':    {'retorno': 30.00, 'risco': 10,'taxa': 0.50, 'tipo': 'RV', 'mercado': '💱 Alternativos', 'cor': '#B71C1C', 'desc': 'Blockchain.'}
 }
 
-# Perfis pré-definidos para o Modo Automático
 PERFIS = {
     'Conservador 🛡️': {'Tesouro Selic': 30, 'CDB Liquidez Diária': 30, 'LCI/LCA (Isento)': 20, 'Tesouro IPCA+ (Curto)': 20},
     'Moderado ⚖️':    {'Tesouro Selic': 20, 'LCI/LCA (Isento)': 20, 'Fundo Multimercado': 10, 'FIIs (Tijolo)': 20, 'Ações (Dividendos)': 15, 'Ações EUA (S&P500)': 15},
     'Agressivo 🚀':   {'Ações (Small Caps)': 20, 'Ações EUA (S&P500)': 20, 'Tech Stocks (Nasdaq)': 20, 'FIIs (Papel)': 20, 'Bitcoin (BTC)': 10, 'Tesouro IPCA+ (Longo)': 10}
 }
 
-# Estratégias famosas para o Modo Assistido
 TESES = {
     '👑 Rei dos Dividendos (Barsi)': {'desc': 'Foco em renda passiva recorrente e isenta.', 'pesos': {'Ações (Dividendos)': 40, 'FIIs (Tijolo)': 25, 'FIIs (Papel)': 15, 'Debêntures Incent.': 20}},
     '🌍 All Weather (Ray Dalio)': {'desc': 'Blindada para qualquer cenário.', 'pesos': {'Ações EUA (S&P500)': 30, 'Tesouro IPCA+ (Longo)': 40, 'Tesouro Selic': 15, 'Ouro / Dólar': 7.5, 'CDB Liquidez Diária': 7.5}},
@@ -139,29 +129,15 @@ TESES = {
 }
 
 # ==============================================================================
-# 4. MOTOR MATEMÁTICO (Cálculo Financeiro)
+# 4. MOTOR MATEMÁTICO
 # ==============================================================================
 def calcular(pesos_dict, v_inicial, v_mensal, anos, renda_desejada=0, anos_inicio_retirada=99, usar_retirada=False):
-    """
-    Realiza o cálculo da projeção de investimentos ao longo do tempo.
-    
-    Args:
-        pesos_dict (dict): Dicionário com alocação (ex: {'Ativo A': 50, 'Ativo B': 50})
-        v_inicial (float): Aporte inicial.
-        v_mensal (float): Aporte mensal recorrente.
-        anos (int): Prazo da simulação.
-        renda_desejada (float): Valor de retirada mensal (modo aposentadoria).
-        anos_inicio_retirada (int): Ano para começar as retiradas.
-        usar_retirada (bool): Flag para ativar o modo de retirada.
-
-    Returns:
-        dict: Contém arrays de projeção (eixo x, y), métricas finais e dados dos ativos.
-    """
+    # --- Parâmetros de Mercado ---
     inflacao_aa = 4.5
     cdi_aa = 10.65
     taxa_poupanca = 6.17
-    total = sum(pesos_dict.values())
     
+    total = sum(pesos_dict.values())
     usar_poupanca = False
     ativos_usados = [] 
     
@@ -169,7 +145,6 @@ def calcular(pesos_dict, v_inicial, v_mensal, anos, renda_desejada=0, anos_inici
     custo_ponderado = 0
     risco_pond = 0
 
-    # Normalização dos pesos e cálculo de médias ponderadas da carteira
     if total == 0:
         usar_poupanca = True
         total = 1
@@ -187,10 +162,8 @@ def calcular(pesos_dict, v_inicial, v_mensal, anos, renda_desejada=0, anos_inici
                 risco_pond += info['risco'] * peso_real
                 ativos_usados.append({'nome': nome, 'peso': peso_real*100, 'cor': info['cor'], 'desc': info['desc'], 'mercado': info['mercado']})
     
-    # Rentabilidade Líquida (Bruto - Custos da Carteira)
     retorno_liquido_aa = retorno_bruto_ponderado - custo_ponderado
 
-    # Conversão de Taxas Anuais para Mensais
     meses = anos * 12
     mes_inicio_retirada = anos_inicio_retirada * 12
     
@@ -199,40 +172,32 @@ def calcular(pesos_dict, v_inicial, v_mensal, anos, renda_desejada=0, anos_inici
     tx_poup = (1 + taxa_poupanca/100)**(1/12) - 1
     tx_inf = (1 + inflacao_aa/100)**(1/12) - 1
     
-    # Arrays de Projeção (Inicialização)
     y_cart_nom, y_cart_real = [v_inicial], [v_inicial]
     y_cdi_nom, y_cdi_real = [v_inicial], [v_inicial]
     y_poup_nom, y_poup_real = [v_inicial], [v_inicial]
     
     investido = v_inicial
     
-    # Loop de Projeção Mês a Mês
     for m in range(meses):
         fluxo = v_mensal
-        # Lógica de Retirada (Aposentadoria)
         if usar_retirada and m >= mes_inicio_retirada:
             fluxo = v_mensal - renda_desejada
         
-        # 1. Projeção Carteira (Nominal e Real)
         y_cart_nom.append(y_cart_nom[-1] * (1 + tx_cart) + fluxo)
-        fator_real_cart = (1 + tx_cart) / (1 + tx_inf) # Desconto da inflação
+        fator_real_cart = (1 + tx_cart) / (1 + tx_inf)
         y_cart_real.append(y_cart_real[-1] * fator_real_cart + fluxo)
         
-        # 2. Projeção Benchmark CDI
         y_cdi_nom.append(y_cdi_nom[-1] * (1 + tx_cdi) + fluxo)
         fator_real_cdi = (1 + tx_cdi) / (1 + tx_inf)
         y_cdi_real.append(y_cdi_real[-1] * fator_real_cdi + fluxo)
         
-        # 3. Projeção Benchmark Poupança
         y_poup_nom.append(y_poup_nom[-1] * (1 + tx_poup) + fluxo)
         fator_real_poup = (1 + tx_poup) / (1 + tx_inf)
         y_poup_real.append(y_poup_real[-1] * fator_real_poup + fluxo)
         
-        # Contabiliza valor investido (apenas aportes, não reinvestimentos)
         if not (usar_retirada and m >= mes_inicio_retirada):
             investido += v_mensal
     
-    # Cálculo de viabilidade de renda passiva
     taxa_real_mensal = (1 + tx_cart) / (1 + tx_inf) - 1
     if taxa_real_mensal <= 0: taxa_real_mensal = 0.0001
     renda_passiva_possivel = y_cart_real[-1] * taxa_real_mensal
@@ -249,14 +214,12 @@ def calcular(pesos_dict, v_inicial, v_mensal, anos, renda_desejada=0, anos_inici
     }
 
 # ==============================================================================
-# 5. GERENCIAMENTO DE ESTADO (Session State)
+# 5. GERENCIAMENTO DE ESTADO
 # ==============================================================================
-# Inicializa os sliders com valor 0 se não existirem
 for k in ATIVOS.keys():
     if f"sl_{k}" not in st.session_state: st.session_state[f"sl_{k}"] = 0
 
 def atualizar_reativo():
-    """Atualiza os sliders automaticamente baseados no modo (Auto/Assistido)."""
     mode = st.session_state.get("modo_op")
     pesos = {}
     if mode == "Automático":
@@ -274,27 +237,21 @@ def atualizar_reativo():
 # ==============================================================================
 # 6. INTERFACE DE USUÁRIO (UI)
 # ==============================================================================
-
-# --- Helper: Imagem para Base64 ---
 def image_to_base64(img):
-    """Converte imagem PIL para string base64 para uso em HTML."""
     buffered = BytesIO()
     img.save(buffered, format="PNG")
     return base64.b64encode(buffered.getvalue()).decode()
 
-# --- Carregamento do Logo ---
 try:
     if os.path.exists('SIOEI LOGO.jpg'): 
         logo_image = Image.open('SIOEI LOGO.jpg')
     else:
-        # Fallback para o repositório se não houver arquivo local
         url = "https://raw.githubusercontent.com/Open0Bit/SIOEI/main/SIOEI%20LOGO.jpg"
         logo_image = Image.open(BytesIO(requests.get(url).content))
     logo_ok = True
 except: 
     logo_ok = False
 
-# --- Renderização do Logo (HTML Absoluto) ---
 if logo_ok:
     img_base64 = image_to_base64(logo_image)
     st.markdown(
@@ -308,24 +265,19 @@ if logo_ok:
 else:
     st.markdown('<div class="logo-container" style="font-size: 50px;">💰</div>', unsafe_allow_html=True)
 
-# --- Cabeçalho e Controles Principais ---
 c_controles = st.container()
 with c_controles:
-    # CSS inline para limitar largura do rádio e evitar sobreposição com logo
     st.markdown('<style>div.row-widget.stRadio { max-width: 80%; }</style>', unsafe_allow_html=True)
-    
     modo = st.radio("Modo de Operação:", ["Manual", "Automático", "Assistido"], 
                     horizontal=True, label_visibility="collapsed", key="modo_op", on_change=atualizar_reativo)
 
 st.divider()
 
-# --- Inputs Numéricos ---
 c1, c2, c3 = st.columns(3)
 v_inicial = c1.number_input("Aporte Inicial (R$)", value=10000.0, step=100.0)
 v_mensal = c2.number_input("Aporte Mensal (R$)", value=0.0, step=100.0)
 anos = c3.slider("Prazo (Anos)", 1, 40, 10)
 
-# --- Lógica de Seleção de Perfil/Tese ---
 if modo == "Automático":
     st.selectbox("Selecione seu Perfil:", list(PERFIS.keys()), key="sel_perfil", on_change=atualizar_reativo)
     st.info("Perfil clássico baseado em tolerância a risco.")
@@ -337,12 +289,10 @@ elif modo == "Assistido":
 else:
     st.caption("Modo Manual: Abra o 'Ajuste Fino' abaixo para configurar.")
 
-# --- Sliders (Ajuste Fino) ---
 with st.expander("🎛️ AJUSTE FINO DA CARTEIRA (Clique para Abrir/Fechar)", expanded=False):
     t1, t2 = st.tabs(["🛡️ RENDA FIXA", "📈 RENDA VARIÁVEL"])
     
     def gerar_sliders_educativos(tipo_alvo, coluna_alvo):
-        """Gera sliders agrupados por 'mercado' dentro das abas."""
         mercados = sorted(list(set([v['mercado'] for k,v in ATIVOS.items() if v['tipo'] == tipo_alvo])))
         for merc in mercados:
             with coluna_alvo.expander(merc, expanded=False):
@@ -354,15 +304,14 @@ with st.expander("🎛️ AJUSTE FINO DA CARTEIRA (Clique para Abrir/Fechar)", e
     with t1: gerar_sliders_educativos('RF', st)
     with t2: gerar_sliders_educativos('RV', st)
 
-# Containers para organização visual
 dashboard_container = st.container()
 raiox_container = st.container()
 
 # ==============================================================================
-# 7. SIOEI 2.0 (MODO APOSENTADORIA / RODAPÉ)
+# 7. SIOEI 2.0 (MODO APOSENTADORIA)
 # ==============================================================================
 st.markdown("<br><br>", unsafe_allow_html=True)
-with st.container(border=True): # Caixa elegante com borda
+with st.container(border=True): 
     st.markdown("### 🏖️ Planejamento de Aposentadoria (SIOEI 2.0)")
     check_aposentadoria = st.checkbox("ATIVAR SIMULAÇÃO DE MESADA", value=False)
     
@@ -372,76 +321,165 @@ with st.container(border=True): # Caixa elegante com borda
     if check_aposentadoria:
         c_m1, c_m2 = st.columns(2)
         with c_m1:
-            # Proteção: min_value=0.0 impede valores negativos na renda
             renda_desejada = st.number_input("Mesada / Renda Mensal (R$)", value=100.0, step=50.0, min_value=0.0) 
         with c_m2:
             anos_retirada = st.slider("Começar a receber em (Anos):", 0, anos, 5)
 
 # ==============================================================================
-# 8. EXECUÇÃO E EXIBIÇÃO
+# 8. EXECUÇÃO E DASHBOARD (ICONES PADRONIZADOS E TARTARUGA)
 # ==============================================================================
 
-# Coleta pesos atuais e executa cálculo
 pesos_atuais = {k: st.session_state[f"sl_{k}"] for k in ATIVOS.keys()}
 d = calcular(pesos_atuais, v_inicial, v_mensal, anos, renda_desejada, anos_retirada, check_aposentadoria)
 
-# --- Exibição do Dashboard (Métricas) ---
 with dashboard_container:
     k1, k2, k3, k4 = st.columns(4)
-    c_nom = "#29B6F6" if not d['is_poup'] else "#757575"
-    c_risco = "#4CAF50" if d['risco'] < 4 else "#FFC107" if d['risco'] < 7 else "#F44336"
-    l_risco = "Baixo" if d['risco'] < 4 else "Médio" if d['risco'] < 7 else "Alto"
 
-    lucro_nom = d['final_nom'] - d['investido']
+    # Cores Baseadas no Tema Escuro
+    COLORS = {
+        "neutral": "#E0E0E0",
+        "success": "#00CC96",      # Verde Mint
+        "warning": "#FDD835",      # Amarelo Ouro
+        "danger":  "#FF4B4B",      # Vermelho Suave
+        "primary": "#29B6F6",      # Azul Streamlit
+        "blue_light": "#81D4FA"
+    }
+
+    # -- CÁLCULO DE RESULTADOS E CORES --
+    cdi_final = d['y_cdi_nom'][-1]
+    poup_final = d['y_poup_nom'][-1]
+    saldo_final = d['final_nom']
+    
+    lucro_nominal = saldo_final - d['investido']
+    lucro_cdi = cdi_final - d['investido']
+    lucro_poup = poup_final - d['investido']
     lucro_real = d['final_real'] - d['investido']
 
+    # --- Função Auxiliar para Calcular Percentual Seguro (Evita Zero/Infinito) ---
+    def calc_percent(numer, denom):
+        denom_safe = max(denom, 0.01)
+        if numer > 0 and denom <= 0:
+             return (numer / 0.01) * 100 
+        return (numer / denom_safe) * 100
+
+    # --- Formatação Personalizada ---
+    def fmt_pct(val):
+        s = f"{val:,.0f}"
+        return s.replace(",", ".")
+
+    # --- Lógica de Comparação CDI (Foguete) ---
+    if lucro_nominal < 0:
+        cor_cdi_header = COLORS["danger"]
+        txt_cdi_header = "📉 Prejuízo"
+        cor_geral_card = COLORS["danger"]
+    elif lucro_nominal < lucro_cdi:
+        cor_cdi_header = COLORS["warning"]
+        pct = calc_percent(lucro_nominal, lucro_cdi)
+        txt_cdi_header = f"⚠️ {fmt_pct(pct)}% do CDI"
+        cor_geral_card = COLORS["warning"]
+    else:
+        cor_cdi_header = COLORS["success"]
+        pct = calc_percent(lucro_nominal, lucro_cdi)
+        txt_cdi_header = f"🚀 {fmt_pct(pct)}% do CDI"
+        cor_geral_card = COLORS["success"]
+
+    # --- Lógica de Comparação Poupança 
+    if lucro_nominal < 0:
+        cor_poup_header = COLORS["danger"]
+        txt_poup_header = "📉 Prejuízo" # ÍCONE ADICIONADO AQUI
+    elif lucro_nominal == lucro_poup:
+        cor_poup_header = COLORS["warning"]
+        pct_p = calc_percent(lucro_nominal, lucro_poup)
+        txt_poup_header = f"⚠️ {fmt_pct(pct_p)}% da Poupança"
+    else:
+        cor_poup_header = COLORS["success"]
+        pct_p = calc_percent(lucro_nominal, lucro_poup)
+        
+        txt_poup_header = f"📈 {fmt_pct(pct_p)}% da Poupança"
+
+    # --- Exibição dos Cards ---
+    sinal_nominal = "-" if lucro_nominal < 0 else "+"
+    sinal_real = "-" if lucro_real < 0 else "+"
+    
+    # Risco
+    c_risco = COLORS["success"] if d['risco'] < 4 else COLORS["warning"] if d['risco'] < 7 else COLORS["danger"]
+    l_risco = "Baixo" if d['risco'] < 4 else "Médio" if d['risco'] < 7 else "Alto"
+
     # Card 1: Total Investido
-    k1.markdown(f"""<div class="metric-card"><div class="metric-label">TOTAL INVESTIDO</div><div class="metric-main">R$ {d['investido']:,.2f}</div></div>""", unsafe_allow_html=True)
+    k1.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-label" style="color:{COLORS['neutral']}">TOTAL INVESTIDO</div>
+        <div class="metric-main">R$ {d['investido']:,.2f}</div>
+    </div>""", unsafe_allow_html=True)
     
-    # Card 2: Saldo Bruto (Com legenda de Saldo Real)
-    k2.markdown(f"""<div class="metric-card" style="border-bottom: 3px solid {c_nom};"><div class="metric-label" style="color:{c_nom}">SALDO BRUTO (NOMINAL)</div><div class="metric-main">R$ {d['final_nom']:,.2f}</div><div class="metric-sub" style="color:{c_nom}">Desc. Inflação + Tx. e Custos: R$ {d['final_real']:,.2f}</div></div>""", unsafe_allow_html=True)
+    # Card 2: Saldo Bruto (Corrigido)
+    k2.markdown(f"""
+    <div class="metric-card" style="border-bottom: 3px solid {cor_geral_card};">
+        <div class="metric-label" style="color:{cor_geral_card}">SALDO BRUTO (NOMINAL)</div>
+        <div class="metric-main" style="color:white;">R$ {d['final_nom']:,.2f}</div>
+        <div class="metric-detail">Desc. Inflação + Custos: <span style="color:{cor_geral_card};">R$ {d['final_real']:,.2f}</span></div>
+    </div>""", unsafe_allow_html=True)
     
-    # Card 3: Lucro Bruto (Com legenda de Lucro Real)
-    k3.markdown(f"""<div class="metric-card" style="border-bottom: 3px solid #00E676;"><div class="metric-label" style="color:#00E676">LUCRO BRUTO (NOMINAL)</div><div class="metric-main">+ R$ {lucro_nom:,.2f}</div><div class="metric-sub">Desc. Inflação + Tx. e Custos: +R$ {lucro_real:,.2f}</div></div>""", unsafe_allow_html=True)
+    # Card 3: Lucro Bruto
+    k3.markdown(f"""
+    <div class="metric-card" style="border-bottom: 3px solid {cor_geral_card};">
+        <div class="metric-label" style="color:{cor_geral_card}">LUCRO BRUTO (NOMINAL)</div>
+        <div class="metric-main" style="color:white;">{sinal_nominal} R$ {abs(lucro_nominal):,.2f}</div>
+        <div class="metric-detail">Desc. Inflação + Custos: <span style="color:{cor_geral_card}">{sinal_real} R$ {abs(lucro_real):,.2f}</span></div>
+    </div>""", unsafe_allow_html=True)
     
     # Card 4: Risco
-    k4.markdown(f"""<div class="metric-card"><div class="metric-label">RISCO ({l_risco})</div><div class="metric-main" style="color:{c_risco}">{d['risco']:.1f}/10</div></div>""", unsafe_allow_html=True)
+    k4.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-label">RISCO ({l_risco})</div>
+        <div class="metric-main" style="color:{c_risco}">{d['risco']:.1f}/10</div>
+    </div>""", unsafe_allow_html=True)
 
     if d['is_poup']:
         st.warning("⚠️ MODO POUPANÇA (CARTEIRA VAZIA). Adicione ativos ou escolha uma estratégia.")
 
-    # --- Gráficos (Evolução e Pizza) ---
+    # --- Gráficos com Cabeçalho Customizado (Flexível) ---
     g1, g2 = st.columns([2, 1])
 
     with g1:
-        fig, ax = plt.subplots(figsize=(10, 5))
-        COR_CART = '#29B6F6' # Azul Carteira
-        COR_CDI = '#FFD700'  # Amarelo CDI
-        COR_POUP = '#FF5722' # Laranja Poupança
+        # Cabeçalho HTML customizado para o gráfico
+        st.markdown(f"""
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; margin-bottom: 5px; background-color: #262730; padding: 10px; border-radius: 5px; border: 1px solid #444;">
+            <div style="font-size: 16px; font-weight: bold; color: #E0E0E0; margin-right: 10px;">Raio-X: Nominal vs Real ({anos} Anos)</div>
+            <div style="font-size: 13px; font-family: sans-serif; font-weight: bold; white-space: nowrap;">
+                <span style="color: {cor_cdi_header}; margin-right: 15px;">{txt_cdi_header}</span>
+                <span style="color: {cor_poup_header};">{txt_poup_header}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        fig, ax = plt.subplots(figsize=(10, 4.5))
+        COR_CART = cor_geral_card
+        COR_CDI = '#FFD700'
+        COR_POUP = '#FF5722'
 
         if not d['is_poup']:
             ax.plot(d['x'], d['y_cart_nom'], color=COR_CART, linewidth=2, label='Carteira (Nominal)')
             ax.plot(d['x'], d['y_cart_real'], color=COR_CART, linewidth=1, linestyle=':', alpha=0.5)
-            label_fill = 'Perda Inflação' if not check_aposentadoria else 'Evolução Líquida (Com Retiradas)'
+            label_fill = 'Perda Inflação' if not check_aposentadoria else 'Evolução Líquida'
             ax.fill_between(d['x'], d['y_cart_nom'], d['y_cart_real'], color=COR_CART, alpha=0.15, label=label_fill)
         
         ax.plot(d['x'], d['y_cdi_nom'], color=COR_CDI, linewidth=1.5, linestyle='--', alpha=0.7, label='CDI (Nominal)')
         ax.plot(d['x'], d['y_cdi_real'], color=COR_CDI, linewidth=0.5, linestyle=':', alpha=0.3)
-        ax.fill_between(d['x'], d['y_cdi_nom'], d['y_cdi_real'], color=COR_CDI, alpha=0.05)
+        ax.fill_between(d['x'], d['y_cdi_nom'], d['y_cdi_real'], color=COR_CDI, alpha=0.1)
         
         style_poup = '-' if d['is_poup'] else ':'
         alpha_line = 0.9 if d['is_poup'] else 0.5
         ax.plot(d['x'], d['y_poup_nom'], color=COR_POUP, linewidth=1.5, linestyle=style_poup, alpha=alpha_line, label='Poupança (Nominal)')
-        ax.plot(d['x'], d['y_poup_real'], color=COR_POUP, linewidth=0.5, linestyle=':', alpha=0.3)
-        ax.fill_between(d['x'], d['y_poup_nom'], d['y_poup_real'], color=COR_POUP, alpha=0.05)
+        ax.fill_between(d['x'], d['y_poup_nom'], d['y_poup_real'], color=COR_POUP, alpha=0.1)
         
-        ax.set_title(f"Raio-X: Nominal vs Real ({anos} Anos)", color='white', loc='left')
         ax.legend(loc='upper left', frameon=False, ncol=2, fontsize='x-small')
         ax.grid(True, alpha=0.1)
         ax.spines['top'].set_visible(False); ax.spines['right'].set_visible(False); ax.spines['bottom'].set_color('#444'); ax.spines['left'].set_color('#444'); ax.tick_params(colors='#aaa')
         st.pyplot(fig)
 
     with g2:
+        st.markdown("<br>", unsafe_allow_html=True)
         fig2, ax2 = plt.subplots(figsize=(6, 6))
         vals = [i['peso'] for i in d['ativos']]
         labs = [f"{i['nome']}\n{i['peso']:.0f}%" for i in d['ativos']]
