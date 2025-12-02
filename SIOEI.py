@@ -1,7 +1,7 @@
 """
 =============================================================================
 PROJETO: SIOEI (Sistema Inteligente de Otimização e Execução de Investimentos)
-VERSÃO: 2.3 (Mobile Landscape Aggressive Fix)
+VERSÃO: 2.4 (Horizontal Align & Card Text Fix)
 CODENAME: Sprout 🌱
 DESCRIÇÃO: Simulador de alocação de ativos, projeção de juros compostos,
            análise de independência financeira e comparação de cenários.
@@ -36,39 +36,39 @@ st.markdown("""
     /* Fundo e Texto Principal */
     .stApp { background-color: #0E1117; color: white; }
     
-    /* --- CSS PADRÃO DOS CARDS (PC) --- */
+    /* --- CSS DOS CARDS (Corrigido para texto aparecer e alinhar) --- */
     .metric-card {
         background-color: #262730; 
         border: 1px solid #444; 
-        padding: 10px;
+        padding: 12px;
         border-radius: 10px; 
         text-align: center; 
         margin-bottom: 10px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        /* Altura fixa para PC para garantir alinhamento */
-        height: 160px;
-        box-sizing: border-box; /* Garante que bordas não aumentem o tamanho */
+        
+        /* Altura e Flexbox para garantir alinhamento sem cortar texto */
+        height: 100%;           /* Ocupa a altura total da coluna */
+        min-height: 140px;      /* Altura mínima garantida */
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: center; /* Centraliza verticalmente */
         align-items: center;
     }
     
     .metric-main { font-size: 24px; font-weight: bold; color: white; margin: 5px 0; }
-    .metric-sub { font-size: 12px; margin-top: 2px; opacity: 0.9; font-family: sans-serif; }
     
+    /* Texto Secundário: Permite quebra de linha para não sumir */
     .metric-detail { 
         font-size: 11px; 
         margin-top: 8px; 
-        opacity: 0.7; 
+        opacity: 0.8; 
         font-family: monospace; 
         color: #E0E0E0; 
         border-top: 1px solid #444; 
         padding-top: 4px; 
         width: 100%; 
-        white-space: nowrap; /* Evita quebra de linha indesejada no detalhe */
-        overflow: hidden;
-        text-overflow: ellipsis;
+        line-height: 1.2;      /* Espaçamento melhor entre linhas */
+        white-space: normal;   /* Permite quebra de linha se não couber */
     }
     
     .metric-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; font-weight: 700; }
@@ -85,45 +85,22 @@ st.markdown("""
         right: 0px;
         z-index: 1000;
     }
-    
-    /* ==========================================================================
-       CORREÇÃO AGRESSIVA PARA MOBILE (VERTICAL E HORIZONTAL)
-       ========================================================================== */
-    
-    @media (max-width: 1024px) {
-        
-        /* 1. FORÇAR EMPILHAMENTO DE COLUNAS (Horizontal Fix) 
-           Isso obriga o Streamlit a colocar um elemento embaixo do outro em Tablets e Celulares deitados */
-        div[data-testid="column"] {
-            width: 100% !important;
-            flex: 1 1 auto !important;
-            min-width: 100% !important;
-            margin-bottom: 10px;
-        }
 
-        /* 2. LOGO MENOR */
+    /* --- AJUSTES MOBILE / TABLET --- */
+    @media (max-width: 1024px) {
         .logo-container img { width: 90px !important; }
         .logo-container { top: -35px; }
         
-        /* 3. CARDS UNIFORMES E MENORES */
-        .metric-card { 
-            padding: 8px; 
-            height: auto !important; /* Altura flexível no mobile empilhado */
-            min-height: 120px;       /* Mínimo garantido */
-        }
+        /* No celular, reduz um pouco a fonte mas mantem legível */
         .metric-main { font-size: 20px; }
-        
-        /* 4. AJUSTE DO GRÁFICO PARA OCUPAR TUDO */
-        div[data-testid="stPyplot"] {
-            width: 100% !important;
-        }
+        .metric-card { min-height: 130px; padding: 8px; }
     }
 
 </style>
 """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 3. BASE DE DADOS (Dicionários Estáticos)
+# 3. BASE DE DADOS
 # ==============================================================================
 plt.style.use('dark_background')
 
@@ -486,22 +463,30 @@ with dashboard_container:
     if d['is_poup']:
         st.warning("⚠️ MODO POUPANÇA (CARTEIRA VAZIA). Adicione ativos ou escolha uma estratégia.")
 
-    # --- Gráficos com Cabeçalho Customizado (Flexível) ---
-    g1, g2 = st.columns([2, 1])
+    # --- AREA DE GRÁFICOS ---
+    
+    # 1. CABEÇALHO FULL WIDTH (Fora das Colunas)
+    # Isso garante que ele estique até a margem direita da página, como solicitado.
+    st.markdown(f"""
+    <div style="
+        display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; 
+        margin-top: 10px; margin-bottom: 10px; 
+        background-color: #262730; padding: 12px; border-radius: 5px; border: 1px solid #444; width: 100%;">
+        <div style="font-size: 16px; font-weight: bold; color: #E0E0E0; margin-right: 10px;">📊 Raio-X: Nominal vs Real ({anos} Anos)</div>
+        <div style="font-size: 13px; font-family: sans-serif; font-weight: bold; white-space: nowrap;">
+            <span style="color: {cor_cdi_header}; margin-right: 15px;">{txt_cdi_header}</span>
+            <span style="color: {cor_poup_header};">{txt_poup_header}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 2. COLUNAS ALINHADAS
+    # Proporção [3, 1.2] dá mais espaço ao gráfico de linha.
+    g1, g2 = st.columns([3, 1.2])
 
     with g1:
-        # Cabeçalho HTML customizado para o gráfico
-        st.markdown(f"""
-        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; margin-bottom: 5px; background-color: #262730; padding: 10px; border-radius: 5px; border: 1px solid #444;">
-            <div style="font-size: 16px; font-weight: bold; color: #E0E0E0; margin-right: 10px;">Raio-X: Nominal vs Real ({anos} Anos)</div>
-            <div style="font-size: 13px; font-family: sans-serif; font-weight: bold; white-space: nowrap;">
-                <span style="color: {cor_cdi_header}; margin-right: 15px;">{txt_cdi_header}</span>
-                <span style="color: {cor_poup_header};">{txt_poup_header}</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        fig, ax = plt.subplots(figsize=(10, 4.5))
+        # Gráfico Principal
+        fig, ax = plt.subplots(figsize=(10, 4)) # Altura 4 para alinhar melhor
         COR_CART = cor_geral_card
         COR_CDI = '#FFD700'
         COR_POUP = '#FF5722'
@@ -525,19 +510,18 @@ with dashboard_container:
         ax.grid(True, alpha=0.1)
         ax.spines['top'].set_visible(False); ax.spines['right'].set_visible(False); ax.spines['bottom'].set_color('#444'); ax.spines['left'].set_color('#444'); ax.tick_params(colors='#aaa')
         
-        # CORREÇÃO MOBILE: use_container_width=True garante que o gráfico expanda
         st.pyplot(fig, use_container_width=True)
 
     with g2:
-        st.markdown("<br>", unsafe_allow_html=True)
-        fig2, ax2 = plt.subplots(figsize=(6, 6))
+        # Gráfico Pizza (Ajustado para alinhar visualmente em altura)
+        # figsize (5, 5) ajuda a ficar "quadrado" mas compacto
+        fig2, ax2 = plt.subplots(figsize=(5, 5))
         vals = [i['peso'] for i in d['ativos']]
         labs = [f"{i['nome']}\n{i['peso']:.0f}%" for i in d['ativos']]
         colors = [i['cor'] for i in d['ativos']]
         if not vals: vals=[1]; labs=[""]; colors=["#333"]
-        ax2.pie(vals, labels=labs, colors=colors, startangle=90, textprops={'color':"white", 'fontsize': 8}, wedgeprops=dict(width=0.45, edgecolor='#222'))
-        ax2.set_title("Alocação por Produto", color='white')
-        # CORREÇÃO MOBILE: use_container_width=True garante que o gráfico expanda
+        ax2.pie(vals, labels=labs, colors=colors, startangle=90, textprops={'color':"white", 'fontsize': 7}, wedgeprops=dict(width=0.45, edgecolor='#222'))
+        ax2.set_title("Alocação", color='white', fontsize=10)
         st.pyplot(fig2, use_container_width=True)
 
 # --- Detalhes dos Ativos (Lista) ---
