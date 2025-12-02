@@ -1,7 +1,7 @@
 """
 =============================================================================
 PROJETO: SIOEI (Sistema Inteligente de Otimização e Execução de Investimentos)
-VERSÃO: 2.1 (Mobile Fix)
+VERSÃO: 2.2 (Landscape Fix)
 CODENAME: Sprout 🌱
 DESCRIÇÃO: Simulador de alocação de ativos, projeção de juros compostos,
            análise de independência financeira e comparação de cenários.
@@ -36,7 +36,7 @@ st.markdown("""
     /* Fundo e Texto Principal */
     .stApp { background-color: #0E1117; color: white; }
     
-    /* Estilo dos Cards de Métricas (Topo) */
+    /* --- CSS DOS CARDS --- */
     .metric-card {
         background-color: #262730; 
         border: 1px solid #444; 
@@ -45,17 +45,30 @@ st.markdown("""
         text-align: center; 
         margin-bottom: 10px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        /* CORREÇÃO MOBILE: Altura flexível em vez de fixa */
-        min-height: 120px; 
-        height: auto;
+        /* Garante altura uniforme */
+        min-height: 140px; 
+        height: 100%; 
+        box-sizing: border-box;
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: space-between; /* Distribui melhor o espaço interno */
         align-items: center;
     }
+    
     .metric-main { font-size: 24px; font-weight: bold; color: white; margin: 5px 0; }
     .metric-sub { font-size: 12px; margin-top: 2px; opacity: 0.9; font-family: sans-serif; }
-    .metric-detail { font-size: 11px; margin-top: 8px; opacity: 0.7; font-family: monospace; color: #E0E0E0; border-top: 1px solid #444; padding-top: 4px; width: 100%; word-wrap: break-word; }
+    /* Ajuste para que o texto não "vaze" e tenha altura fixa mínima */
+    .metric-detail { 
+        font-size: 11px; 
+        margin-top: auto; /* Empurra para baixo */
+        opacity: 0.7; 
+        font-family: monospace; 
+        color: #E0E0E0; 
+        border-top: 1px solid #444; 
+        padding-top: 4px; 
+        width: 100%; 
+        min-height: 20px; /* Garante alinhamento mesmo se vazio */
+    }
     .metric-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; font-weight: 700; }
     
     /* Ajustes de Widgets */
@@ -71,19 +84,35 @@ st.markdown("""
         z-index: 1000;
     }
     
-    /* --- CORREÇÕES ESPECÍFICAS PARA MOBILE (Tela < 768px) --- */
-    @media (max-width: 768px) {
+    /* --- MEDIA QUERIES PARA MOBILE E TABLET (Horizontal/Vertical) --- */
+    
+    /* 1. Ajustes Gerais para Telas Menores que PC (< 900px) */
+    @media (max-width: 900px) {
         .logo-container img { width: 90px !important; }
         .logo-container { top: -35px; }
         
-        /* Ajusta tamanho da fonte dos cards no celular para não ficarem gigantes */
         .metric-main { font-size: 20px; }
         .metric-label { font-size: 10px; }
-        .metric-card { padding: 10px; min-height: auto; }
         
-        /* Ajusta o título do gráfico para não quebrar feio */
-        div[data-testid="stMarkdownContainer"] h3 { font-size: 1.2rem; }
+        /* Força os cards a terem altura automática flexível mas consistente */
+        .metric-card { 
+            padding: 10px; 
+            min-height: 130px; 
+        }
     }
+
+    /* 2. CORREÇÃO CRÍTICA PARA MOBILE HORIZONTAL (Landscape) */
+    /* Quando a tela é pequena mas está deitada, o Streamlit tenta dividir colunas. 
+       Aqui forçamos as colunas do gráfico a empilharem (width: 100%) */
+    @media (max-width: 900px) {
+        /* Seletor genérico para colunas do Streamlit dentro da área de gráficos */
+        div[data-testid="column"] {
+            width: 100% !important;
+            flex: 1 1 auto !important;
+            min-width: 100% !important;
+        }
+    }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -421,6 +450,7 @@ with dashboard_container:
     <div class="metric-card">
         <div class="metric-label" style="color:{COLORS['neutral']}">TOTAL INVESTIDO</div>
         <div class="metric-main">R$ {d['investido']:,.2f}</div>
+        <div class="metric-detail"> </div>
     </div>""", unsafe_allow_html=True)
     
     # Card 2: Saldo Bruto (Corrigido)
@@ -444,6 +474,7 @@ with dashboard_container:
     <div class="metric-card">
         <div class="metric-label">RISCO ({l_risco})</div>
         <div class="metric-main" style="color:{c_risco}">{d['risco']:.1f}/10</div>
+        <div class="metric-detail"> </div>
     </div>""", unsafe_allow_html=True)
 
     if d['is_poup']:
