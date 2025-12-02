@@ -1,7 +1,7 @@
 """
 =============================================================================
 PROJETO: SIOEI (Sistema Inteligente de Otimização e Execução de Investimentos)
-VERSÃO: 2.2 (Landscape Fix)
+VERSÃO: 2.3 (Mobile Landscape Aggressive Fix)
 CODENAME: Sprout 🌱
 DESCRIÇÃO: Simulador de alocação de ativos, projeção de juros compostos,
            análise de independência financeira e comparação de cenários.
@@ -36,39 +36,41 @@ st.markdown("""
     /* Fundo e Texto Principal */
     .stApp { background-color: #0E1117; color: white; }
     
-    /* --- CSS DOS CARDS --- */
+    /* --- CSS PADRÃO DOS CARDS (PC) --- */
     .metric-card {
         background-color: #262730; 
         border: 1px solid #444; 
-        padding: 15px;
+        padding: 10px;
         border-radius: 10px; 
         text-align: center; 
         margin-bottom: 10px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        /* Garante altura uniforme */
-        min-height: 140px; 
-        height: 100%; 
-        box-sizing: border-box;
+        /* Altura fixa para PC para garantir alinhamento */
+        height: 160px;
+        box-sizing: border-box; /* Garante que bordas não aumentem o tamanho */
         display: flex;
         flex-direction: column;
-        justify-content: space-between; /* Distribui melhor o espaço interno */
+        justify-content: center;
         align-items: center;
     }
     
     .metric-main { font-size: 24px; font-weight: bold; color: white; margin: 5px 0; }
     .metric-sub { font-size: 12px; margin-top: 2px; opacity: 0.9; font-family: sans-serif; }
-    /* Ajuste para que o texto não "vaze" e tenha altura fixa mínima */
+    
     .metric-detail { 
         font-size: 11px; 
-        margin-top: auto; /* Empurra para baixo */
+        margin-top: 8px; 
         opacity: 0.7; 
         font-family: monospace; 
         color: #E0E0E0; 
         border-top: 1px solid #444; 
         padding-top: 4px; 
         width: 100%; 
-        min-height: 20px; /* Garante alinhamento mesmo se vazio */
+        white-space: nowrap; /* Evita quebra de linha indesejada no detalhe */
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
+    
     .metric-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; font-weight: 700; }
     
     /* Ajustes de Widgets */
@@ -76,7 +78,7 @@ st.markdown("""
     div.row-widget.stRadio > label { display: none; }
     .streamlit-expanderHeader { font-size: 14px; color: #90CAF9; }
 
-    /* --- POSICIONAMENTO DO LOGO (RESPONSIVO) --- */
+    /* --- LOGO --- */
     .logo-container {
         position: absolute;
         top: -45px;
@@ -84,32 +86,36 @@ st.markdown("""
         z-index: 1000;
     }
     
-    /* --- MEDIA QUERIES PARA MOBILE E TABLET (Horizontal/Vertical) --- */
+    /* ==========================================================================
+       CORREÇÃO AGRESSIVA PARA MOBILE (VERTICAL E HORIZONTAL)
+       ========================================================================== */
     
-    /* 1. Ajustes Gerais para Telas Menores que PC (< 900px) */
-    @media (max-width: 900px) {
-        .logo-container img { width: 90px !important; }
-        .logo-container { top: -35px; }
+    @media (max-width: 1024px) {
         
-        .metric-main { font-size: 20px; }
-        .metric-label { font-size: 10px; }
-        
-        /* Força os cards a terem altura automática flexível mas consistente */
-        .metric-card { 
-            padding: 10px; 
-            min-height: 130px; 
-        }
-    }
-
-    /* 2. CORREÇÃO CRÍTICA PARA MOBILE HORIZONTAL (Landscape) */
-    /* Quando a tela é pequena mas está deitada, o Streamlit tenta dividir colunas. 
-       Aqui forçamos as colunas do gráfico a empilharem (width: 100%) */
-    @media (max-width: 900px) {
-        /* Seletor genérico para colunas do Streamlit dentro da área de gráficos */
+        /* 1. FORÇAR EMPILHAMENTO DE COLUNAS (Horizontal Fix) 
+           Isso obriga o Streamlit a colocar um elemento embaixo do outro em Tablets e Celulares deitados */
         div[data-testid="column"] {
             width: 100% !important;
             flex: 1 1 auto !important;
             min-width: 100% !important;
+            margin-bottom: 10px;
+        }
+
+        /* 2. LOGO MENOR */
+        .logo-container img { width: 90px !important; }
+        .logo-container { top: -35px; }
+        
+        /* 3. CARDS UNIFORMES E MENORES */
+        .metric-card { 
+            padding: 8px; 
+            height: auto !important; /* Altura flexível no mobile empilhado */
+            min-height: 120px;       /* Mínimo garantido */
+        }
+        .metric-main { font-size: 20px; }
+        
+        /* 4. AJUSTE DO GRÁFICO PARA OCUPAR TUDO */
+        div[data-testid="stPyplot"] {
+            width: 100% !important;
         }
     }
 
