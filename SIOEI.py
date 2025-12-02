@@ -1,7 +1,7 @@
 """
 =============================================================================
 PROJETO: SIOEI (Sistema Inteligente de Otimização e Execução de Investimentos)
-VERSÃO: 2.0 (Final Icon Sync)
+VERSÃO: 2.1 (Mobile Fix)
 CODENAME: Sprout 🌱
 DESCRIÇÃO: Simulador de alocação de ativos, projeção de juros compostos,
            análise de independência financeira e comparação de cenários.
@@ -45,7 +45,9 @@ st.markdown("""
         text-align: center; 
         margin-bottom: 10px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        height: 140px; 
+        /* CORREÇÃO MOBILE: Altura flexível em vez de fixa */
+        min-height: 120px; 
+        height: auto;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -53,7 +55,7 @@ st.markdown("""
     }
     .metric-main { font-size: 24px; font-weight: bold; color: white; margin: 5px 0; }
     .metric-sub { font-size: 12px; margin-top: 2px; opacity: 0.9; font-family: sans-serif; }
-    .metric-detail { font-size: 11px; margin-top: 8px; opacity: 0.7; font-family: monospace; color: #E0E0E0; border-top: 1px solid #444; padding-top: 4px; width: 100%; }
+    .metric-detail { font-size: 11px; margin-top: 8px; opacity: 0.7; font-family: monospace; color: #E0E0E0; border-top: 1px solid #444; padding-top: 4px; width: 100%; word-wrap: break-word; }
     .metric-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; font-weight: 700; }
     
     /* Ajustes de Widgets */
@@ -69,9 +71,18 @@ st.markdown("""
         z-index: 1000;
     }
     
-    @media (max-width: 640px) {
-        .logo-container img { width: 100px !important; }
-        .logo-container { top: -40px; }
+    /* --- CORREÇÕES ESPECÍFICAS PARA MOBILE (Tela < 768px) --- */
+    @media (max-width: 768px) {
+        .logo-container img { width: 90px !important; }
+        .logo-container { top: -35px; }
+        
+        /* Ajusta tamanho da fonte dos cards no celular para não ficarem gigantes */
+        .metric-main { font-size: 20px; }
+        .metric-label { font-size: 10px; }
+        .metric-card { padding: 10px; min-height: auto; }
+        
+        /* Ajusta o título do gráfico para não quebrar feio */
+        div[data-testid="stMarkdownContainer"] h3 { font-size: 1.2rem; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -476,7 +487,9 @@ with dashboard_container:
         ax.legend(loc='upper left', frameon=False, ncol=2, fontsize='x-small')
         ax.grid(True, alpha=0.1)
         ax.spines['top'].set_visible(False); ax.spines['right'].set_visible(False); ax.spines['bottom'].set_color('#444'); ax.spines['left'].set_color('#444'); ax.tick_params(colors='#aaa')
-        st.pyplot(fig)
+        
+        # CORREÇÃO MOBILE: use_container_width=True garante que o gráfico expanda
+        st.pyplot(fig, use_container_width=True)
 
     with g2:
         st.markdown("<br>", unsafe_allow_html=True)
@@ -487,7 +500,8 @@ with dashboard_container:
         if not vals: vals=[1]; labs=[""]; colors=["#333"]
         ax2.pie(vals, labels=labs, colors=colors, startangle=90, textprops={'color':"white", 'fontsize': 8}, wedgeprops=dict(width=0.45, edgecolor='#222'))
         ax2.set_title("Alocação por Produto", color='white')
-        st.pyplot(fig2)
+        # CORREÇÃO MOBILE: use_container_width=True garante que o gráfico expanda
+        st.pyplot(fig2, use_container_width=True)
 
 # --- Detalhes dos Ativos (Lista) ---
 with raiox_container:
