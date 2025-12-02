@@ -1,9 +1,9 @@
 """
 =============================================================================
 PROJETO: SIOEI (Sistema Inteligente de Otimização e Execução de Investimentos)
-VERSÃO: 2.6 (CVM Compliant & Inflation Areas Fixed)
-CODENAME: Sprout 🌱 - Edição Realista Otimizada
-DESCRIÇÃO: Simulador com preenchimento visual de inflação e carteiras CVM.
+VERSÃO: 2.7 (Educational Descriptions Restored)
+CODENAME: Sprout 🌱 - Edição Final Otimizada
+DESCRIÇÃO: Simulador completo com educacional de perfis e áreas de inflação.
 AUTOR: Aegra Code Guild
 DATA: Dezembro/2025
 =============================================================================
@@ -236,33 +236,36 @@ ATIVOS = {
     }
 }
 
-# --- PERFIS OTIMIZADOS P/ BATER CDI (DENTRO DA REGULAÇÃO CVM) ---
+# --- PERFIS OTIMIZADOS E DESCRITIVOS ---
 PERFIS = {
-    # CONSERVADOR: Foco em Isenção Fiscal (LCI/LCA/Debêntures) para ganhar do CDI Líquido
     'Conservador 🛡️': {
-        'LCI/LCA (Isento)': 40,      # Carro chefe (Isento)
-        'Tesouro Selic': 30,         # Liquidez
-        'Debêntures Incent.': 15,    # Crédito Privado Isento (Pimenta)
-        'Tesouro IPCA+ (Curto)': 15  # Proteção Inflação
+        'LCI/LCA (Isento)': 40, 
+        'Tesouro Selic': 30, 
+        'Debêntures Incent.': 15, 
+        'Tesouro IPCA+ (Curto)': 15
     },
-    # MODERADO: Mix de Crédito Privado + FIIs (Renda Recorrente)
     'Moderado ⚖️': {
-        'Debêntures Incent.': 25,    # Isento e retorno acima do CDI
-        'FIIs (Papel)': 20,          # High Yield Mensal
-        'Fiagro (Agronegócio)': 15,  # High Yield Mensal
-        'Fundo Multimercado': 10,    # Descorrelação
-        'Ações (Dividendos)': 15,    # Renda Variável Segura
-        'Tesouro IPCA+ (Longo)': 15  # Ganho de Capital na Curva
+        'Debêntures Incent.': 25, 
+        'FIIs (Papel)': 20, 
+        'Fiagro (Agronegócio)': 15, 
+        'Fundo Multimercado': 10, 
+        'Ações (Dividendos)': 15, 
+        'Tesouro IPCA+ (Longo)': 15
     },
-    # ARROJADO: Alavancagem em Growth e Crypto, mantendo base em IPCA+
     'Agressivo 🚀': {
-        'Ações (Small Caps)': 20,    # Potencial explosivo
-        'Bitcoin (BTC)': 15,         # Alpha do portfólio
-        'Tech Stocks (Nasdaq)': 20,  # Dolarização forte
-        'FIIs (Tijolo)': 15,         # Estabilidade no meio do caos
-        'CRI/CRA (High Yield)': 15,  # Risco de crédito alto retorno
-        'Tesouro IPCA+ (Longo)': 15  # Proteção patrimonial longa
+        'Ações (Small Caps)': 20, 
+        'Bitcoin (BTC)': 15, 
+        'Tech Stocks (Nasdaq)': 20, 
+        'FIIs (Tijolo)': 15, 
+        'CRI/CRA (High Yield)': 15, 
+        'Tesouro IPCA+ (Longo)': 15
     }
+}
+
+DESCRICOES_PERFIS = {
+    'Conservador 🛡️': 'Foco em PRESERVAÇÃO DE CAPITAL. Alocação majoritária em Renda Fixa Isenta (LCI/LCA) para superar o CDI líquido sem correr riscos desnecessários.',
+    'Moderado ⚖️': 'Equilíbrio entre Segurança e Retorno. Introduz "pimentas" de Renda Variável (FIIs) e Crédito Privado para buscar ganho real acima da inflação.',
+    'Agressivo 🚀': 'Foco em MULTIPLICAÇÃO DE PATRIMÔNIO. Aceita alta volatilidade para buscar retornos expressivos no longo prazo com Ações, Crypto e Dolarização.'
 }
 
 TESES = {
@@ -427,8 +430,12 @@ v_mensal = c2.number_input("Aporte Mensal (R$)", value=0.0, step=100.0)
 anos = c3.slider("Prazo (Anos)", 1, 40, 10)
 
 if modo == "Automático":
-    st.selectbox("Selecione seu Perfil (CVM Suitability):", list(PERFIS.keys()), key="sel_perfil", on_change=atualizar_reativo)
-    st.info("Estratégias otimizadas para superar o CDI Líquido dentro do risco permitido.")
+    perfil_sel = st.selectbox("Selecione seu Perfil (CVM Suitability):", list(PERFIS.keys()), key="sel_perfil", on_change=atualizar_reativo)
+    
+    # --- AQUI ESTÁ A CORREÇÃO: DESCRIÇÃO EDUCACIONAL DE VOLTA ---
+    desc_texto = DESCRICOES_PERFIS.get(perfil_sel, "Perfil personalizado.")
+    st.info(f"💡 **{perfil_sel}**: {desc_texto}")
+    
     if sum([st.session_state[f"sl_{k}"] for k in ATIVOS]) == 0: atualizar_reativo()
 elif modo == "Assistido":
     st.selectbox("Selecione a Estratégia:", list(TESES.keys()), key="sel_tese", on_change=atualizar_reativo)
