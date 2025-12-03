@@ -1,10 +1,11 @@
 """
 =============================================================================
 PROJETO: SIOEI (Sistema Inteligente de Otimização e Execução de Investimentos)
-VERSÃO: 4.0 (Brazilian Reality Edition 🇧🇷) - DEPURADO
-CODENAME: Sprout 🌱 - Edição "Raio-X ANBIMA/B3"
+VERSÃO: 4.1 (Michelangelo Edition 🎨) - DEPURADO
+CODENAME: Sprout 🌱 - Edição "Raio-X ANBIMA/B3" + UI Premium
 DESCRIÇÃO: Calibração baseada no comportamento real do investidor brasileiro (2024/25).
            Foco em Rentismo (CDI), Paixão por FIIs e Alta Adoção de Cripto.
+           *Nova Interface Gráfica Reativa*
 AUTOR: Aegra Code Guild (Refinado por Gemini, Depurado por Claude)
 DATA: Dezembro/2025
 =============================================================================
@@ -36,15 +37,21 @@ st.set_page_config(
 )
 
 # ==============================================================================
-# 2. ESTILIZAÇÃO
+# 2. ESTILIZAÇÃO (DESIGN SYSTEM MICHELANGELO 🎨)
 # ==============================================================================
 st.markdown("""
 <style>
-    .stApp { background-color: #0E1117; color: white; }
+    /* RESET BÁSICO E TRANSIÇÃO SUAVE DE FUNDO */
+    .stApp { 
+        transition: background 0.5s ease; 
+        background-color: #0E1117; /* Fallback */
+    }
     
+    /* CARDS DE MÉTRICAS */
     .metric-card {
-        background-color: #262730; 
-        border: 1px solid #444; 
+        background-color: rgba(38, 39, 48, 0.7);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.1); 
         padding: 12px;
         border-radius: 10px; 
         text-align: center; 
@@ -56,20 +63,92 @@ st.markdown("""
         flex-direction: column;
         justify-content: center;
         align-items: center;
+        transition: transform 0.2s;
     }
-    .metric-main { font-size: 24px; font-weight: bold; color: white; margin: 5px 0; }
-    .metric-detail { font-size: 11px; margin-top: 8px; opacity: 0.8; font-family: monospace; color: #E0E0E0; border-top: 1px solid #444; padding-top: 4px; width: 100%; line-height: 1.2; white-space: normal; }
+    .metric-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.3); }
+
+    .metric-main { font-size: 24px; font-weight: bold; color: white; margin: 5px 0; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    .metric-detail { font-size: 11px; margin-top: 8px; opacity: 0.8; font-family: monospace; color: #E0E0E0; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 4px; width: 100%; line-height: 1.2; white-space: normal; }
     .metric-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; font-weight: 700; }
     
-    .status-badge {
-        font-size: 12px; padding: 4px 8px; border-radius: 4px; font-weight: bold; display: inline-block; margin-right: 10px;
-    }
+    /* BADGES DE STATUS */
+    .status-badge { font-size: 12px; padding: 4px 8px; border-radius: 4px; font-weight: bold; display: inline-block; margin-right: 10px; }
     .status-live { background-color: #1B5E20; color: #A5D6A7; border: 1px solid #2E7D32; }
     .status-warning { background-color: #F57F17; color: #FFF9C4; border: 1px solid #FBC02D; }
     .status-static { background-color: #B71C1C; color: #FFCDD2; border: 1px solid #C62828; }
     
     div.stButton > button { width: 100%; }
-    div.row-widget.stRadio > label { display: none; }
+
+    /* --- ESTILIZAÇÃO AVANÇADA DOS BOTÕES DE MODO (RADIO) --- */
+    
+    /* Esconde as bolinhas originais e labels padrão */
+    div.row-widget.stRadio > div[role="radiogroup"] > label > div:first-child {
+        display: none !important;
+    }
+    
+    /* Container dos botões */
+    div.row-widget.stRadio > div[role="radiogroup"] {
+        background-color: rgba(0,0,0,0.2);
+        padding: 10px;
+        border-radius: 15px;
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    /* O estilo do botão em si (Label) */
+    div.row-widget.stRadio > div[role="radiogroup"] > label {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        padding: 20px 10px !important;
+        border-radius: 10px !important;
+        cursor: pointer !important;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+        text-align: center !important;
+        flex: 1 !important; /* Faz ocuparem espaço igual */
+        margin: 0 !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 120px;
+    }
+
+    /* Texto dentro do botão */
+    div.row-widget.stRadio > div[role="radiogroup"] > label p {
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        margin: 0 !important;
+        color: #B0B0B0 !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Hover Effect */
+    div.row-widget.stRadio > div[role="radiogroup"] > label:hover {
+        background: rgba(255, 255, 255, 0.1) !important;
+        transform: translateY(-3px) !important;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3) !important;
+        border-color: rgba(255,255,255,0.3) !important;
+    }
+    div.row-widget.stRadio > div[role="radiogroup"] > label:hover p {
+        color: white !important;
+    }
+
+    /* --- ESTADO ATIVO (SELECIONADO) --- */
+    /* Focando no atributo aria-checked para estilizar o item ativo */
+    div.row-widget.stRadio > div[role="radiogroup"] > label[aria-checked="true"] {
+        background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05)) !important;
+        border: 2px solid !important; /* A cor da borda virá do CSS injetado dinamicamente */
+        box-shadow: 0 0 20px rgba(0,0,0,0.4), inset 0 0 10px rgba(255,255,255,0.05) !important;
+        transform: scale(1.02) !important;
+    }
+    
+    div.row-widget.stRadio > div[role="radiogroup"] > label[aria-checked="true"] p {
+        color: white !important;
+        text-shadow: 0 0 10px rgba(255,255,255,0.5);
+    }
+
     .logo-container { position: absolute; top: -45px; right: 0px; z-index: 1000; }
     @media (max-width: 1024px) {
         .logo-container img { width: 90px !important; }
@@ -125,13 +204,6 @@ TICKERS_MAP = {
 def obter_retornos_live():
     """
     Obtém retornos reais dos ativos via Yahoo Finance (1 ano)
-    
-    Validações aplicadas:
-    - Mínimo 30 dias de dados (série temporal confiável)
-    - Preço inicial positivo (matemática válida)
-    - Sem filtros arbitrários de retorno (mercado é soberano)
-    
-    Fonte: Yahoo Finance API (dados ajustados para dividendos/splits)
     """
     dados_live = {}
     valid_tickers = [t for t in TICKERS_MAP.values() if t not in ['IFIX', 'IDIV']]
@@ -151,7 +223,6 @@ def obter_retornos_live():
                     if ticker in data.columns:
                         series = data[ticker].dropna()
                         
-                        # Validação 1: Série temporal mínima (30 dias úteis)
                         if len(series) < 30:
                             logger.debug(f"{ticker}: Dados insuficientes ({len(series)} dias)")
                             continue
@@ -159,15 +230,12 @@ def obter_retornos_live():
                         p_ini = series.iloc[0]
                         p_fim = series.iloc[-1]
                         
-                        # Validação 2: Preço inicial válido (evita divisão por zero/negativo)
                         if p_ini <= 0:
                             logger.warning(f"{ticker}: Preço inicial inválido ({p_ini})")
                             continue
                         
-                        # Cálculo do retorno anualizado (sem filtros arbitrários)
                         ret = ((p_fim / p_ini) - 1) * 100
                         
-                        # Validação 3: Apenas verifica se é um número válido
                         if np.isnan(ret) or np.isinf(ret):
                             logger.warning(f"{ticker}: Retorno inválido (NaN/Inf)")
                             continue
@@ -193,7 +261,7 @@ with st.spinner('🔍 Analisando mercado brasileiro (B3/ANBIMA)...'):
 # Cálculo de Derivados
 SELIC_ATUAL = MACRO_DATA['selic']
 IPCA_ATUAL = MACRO_DATA['ipca']
-CDI_ATUAL = max(SELIC_ATUAL - 0.10, 0)  # Garantir não-negativo
+CDI_ATUAL = max(SELIC_ATUAL - 0.10, 0)
 
 # Cálculo correto da poupança
 if SELIC_ATUAL > 8.5:
@@ -212,17 +280,14 @@ else:
     STATUS_MERCADO = "OFFLINE ✗ (0 ativos)"
     COR_STATUS_MERCADO = "status-static"
     
-# Log para debug (visível apenas no console do servidor)
 logger.info(f"Status BCB: {STATUS_BCB}")
 logger.info(f"Status Mercado: {STATUS_MERCADO}")
-logger.info(f"Ativos obtidos: {list(LIVE_RETURNS.keys())}")
 
 # --- LÓGICA DE SUAVIZAÇÃO (ALGORITMO HÍBRIDO) ---
 def suavizar_retorno(nome_ativo, base_historica):
     """Combina dados históricos com dados live quando disponíveis"""
     if nome_ativo in LIVE_RETURNS:
         retorno_live = LIVE_RETURNS[nome_ativo]
-        # Média ponderada 50/50
         return (retorno_live * 0.5) + (base_historica * 0.5)
     return base_historica
 
@@ -591,19 +656,18 @@ for k in ATIVOS.keys():
 
 def atualizar_reativo():
     """Atualiza os sliders baseado no modo selecionado"""
-    mode = st.session_state.get("modo_op")
+    mode_raw = st.session_state.get("modo_op")
+    # Mapear de volta se necessário, mas aqui usaremos strings diretas
     pesos = {}
     
-    if mode == "Automático":
+    if mode_raw == "🤖 AUTOMÁTICO":
         p = st.session_state.get("sel_perfil")
-        if p: 
-            pesos = PERFIS[p]
-    elif mode == "Assistido":
+        if p: pesos = PERFIS[p]
+    elif mode_raw == "🤝 ASSISTIDO":
         t = st.session_state.get("sel_tese")
-        if t: 
-            pesos = TESES[t]['pesos']
+        if t: pesos = TESES[t]['pesos']
     
-    if mode == "Manual": 
+    if mode_raw == "🛠️ MANUAL": 
         return
 
     # Atualizar todos os sliders
@@ -668,59 +732,86 @@ else:
     st.markdown('<div class="logo-container" style="font-size: 50px;">🇧🇷</div>', 
                 unsafe_allow_html=True)
 
-# --- CABEÇALHO COM STATUS ---
-c_status, c_vazio = st.columns([2, 3])
-with c_status:
-    cor_bcb = "status-live" if MACRO_DATA['status'] else "status-static"
-    
-    st.markdown(f"""
-        <div style="display:flex; align-items:center; flex-wrap: wrap; gap: 8px;">
-            <span class="status-badge {cor_bcb}">🏛️ BCB: {MACRO_DATA['selic']:.2f}% (Selic)</span>
-            <span class="status-badge {cor_bcb}">📈 IPCA: {MACRO_DATA['ipca']:.2f}%</span>
-            <span class="status-badge {COR_STATUS_MERCADO}">🌍 {STATUS_MERCADO}</span>
-        </div>
-    """, unsafe_allow_html=True)
+st.markdown("<br>", unsafe_allow_html=True)
 
-# Expandir para mostrar diagnóstico detalhado
-with st.expander("🔍 Diagnóstico de Conexões (Clique para detalhes)", expanded=False):
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("**📡 Status Banco Central:**")
-        if MACRO_DATA['status']:
-            st.success(f"✅ Conectado - Selic: {SELIC_ATUAL:.2f}% | IPCA: {IPCA_ATUAL:.2f}%")
-        else:
-            st.error("❌ Falha na conexão com BCB (usando valores padrão)")
-    
-    with col2:
-        st.markdown("**📊 Status Yahoo Finance:**")
-        if total_ativos_live > 0:
-            st.success(f"✅ Conectado - {total_ativos_live} ativos com dados live")
-            st.caption(f"Ativos: {', '.join(list(LIVE_RETURNS.keys())[:3])}...")
-        else:
-            st.warning("⚠️ Nenhum ativo retornado (possíveis causas)")
-            st.caption("• Mercado fechado (fora do horário)")
-            st.caption("• Problemas temporários na API")
-            st.caption("• Cache expirado (aguarde refresh)")
-            
-            # Botão para forçar refresh
-            if st.button("🔄 Forçar Atualização", key="force_refresh"):
-                st.cache_data.clear()
-                st.rerun()
+# --- CONTROLES PRINCIPAIS (DESIGN ATUALIZADO) ---
+st.markdown("""
+    <div style='text-align: center; margin-bottom: 20px;'>
+        <h2 style='font-weight: 800; letter-spacing: 1px; margin-bottom: 5px;'>
+            🎛️ PAINEL DE CONTROLE
+        </h2>
+        <p style='color: #888; font-size: 14px;'>Selecione o nível de autonomia do sistema</p>
+    </div>
+""", unsafe_allow_html=True)
 
-# --- CONTROLES PRINCIPAIS ---
-c_controles = st.container()
-with c_controles:
-    st.markdown('<style>div.row-widget.stRadio { max-width: 80%; }</style>', 
-                unsafe_allow_html=True)
-    modo = st.radio(
-        "Modo de Operação:", 
-        ["Manual", "Automático", "Assistido"], 
-        horizontal=True, 
-        label_visibility="collapsed", 
-        key="modo_op", 
-        on_change=atualizar_reativo
-    )
+# --- BOTÕES DE MODO COM EMOJIS E UX MELHORADA ---
+modo_options = ["🤖 AUTOMÁTICO", "🤝 ASSISTIDO", "🛠️ MANUAL"]
+modo_raw = st.radio(
+    "Modo de Operação:", 
+    modo_options, 
+    horizontal=True, 
+    label_visibility="collapsed", 
+    key="modo_op", 
+    on_change=atualizar_reativo,
+    index=2 
+)
+
+# Mapear de volta para a string simples para uso no código lógico
+modo_map = {
+    "🤖 AUTOMÁTICO": "Automático",
+    "🤝 ASSISTIDO": "Assistido",
+    "🛠️ MANUAL": "Manual"
+}
+modo = modo_map[modo_raw]
+
+# --- LÓGICA DE FUNDO DINÂMICO (AMBIENT LIGHTING) ---
+# Injeta CSS específico dependendo da escolha para pintar o fundo suavemente
+bg_css = ""
+
+if modo == "Automático":
+    # Verde/Teal Futurista (Confiança, Crescimento)
+    bg_css = """
+    <style>
+        .stApp {
+            background: linear-gradient(180deg, #051a14 0%, #0E1117 40%, #0E1117 100%) !important;
+        }
+        /* Cor da borda e brilho do botão ativo */
+        div.row-widget.stRadio > div[role="radiogroup"] > label[aria-checked="true"] {
+            border-color: #00E676 !important;
+            box-shadow: 0 0 15px rgba(0, 230, 118, 0.3) !important;
+        }
+    </style>
+    """
+elif modo == "Assistido":
+    # Roxo/Indigo Deep (Sabedoria, Estratégia)
+    bg_css = """
+    <style>
+        .stApp {
+            background: linear-gradient(180deg, #120a2e 0%, #0E1117 40%, #0E1117 100%) !important;
+        }
+        /* Cor da borda e brilho do botão ativo */
+        div.row-widget.stRadio > div[role="radiogroup"] > label[aria-checked="true"] {
+            border-color: #7C4DFF !important;
+            box-shadow: 0 0 15px rgba(124, 77, 255, 0.3) !important;
+        }
+    </style>
+    """
+else: # Manual
+    # Laranja/Cinza Carvão (Construção, Controle, B3)
+    bg_css = """
+    <style>
+        .stApp {
+            background: linear-gradient(180deg, #1f1505 0%, #0E1117 40%, #0E1117 100%) !important;
+        }
+        /* Cor da borda e brilho do botão ativo */
+        div.row-widget.stRadio > div[role="radiogroup"] > label[aria-checked="true"] {
+            border-color: #FF9800 !important;
+            box-shadow: 0 0 15px rgba(255, 152, 0, 0.3) !important;
+        }
+    </style>
+    """
+# Injetar o CSS do fundo dinâmico
+st.markdown(bg_css, unsafe_allow_html=True)
 
 st.divider()
 
@@ -734,7 +825,7 @@ v_inicial = c1.number_input(
 )
 v_mensal = c2.number_input(
     "Aporte Mensal (R$)", 
-    value=500.0, 
+    value=0.0,  # Retornado para 0
     step=100.0, 
     min_value=0.0
 )
@@ -821,7 +912,7 @@ with st.container(border=True):
         with c_m1:
             renda_desejada = st.number_input(
                 "Renda Mensal Desejada (R$)", 
-                value=3000.0, 
+                value=100.0,  # Retornado para 100
                 step=100.0, 
                 min_value=0.0
             ) 
@@ -1083,7 +1174,89 @@ if check_aposentadoria:
         )
 
 # ==============================================================================
-# 10. RODAPÉ
+# 10. MONITORES DE CONEXÃO (RODAPÉ)
+# ==============================================================================
+st.markdown("<br><br>", unsafe_allow_html=True)
+st.divider()
+
+with st.expander("🔍 MONITORES DE CONEXÃO E DIAGNÓSTICO", expanded=False):
+    # Status visual resumido
+    col_status1, col_status2, col_status3 = st.columns(3)
+    
+    with col_status1:
+        cor_bcb = "status-live" if MACRO_DATA['status'] else "status-static"
+        st.markdown(f"""
+            <div style="text-align: center;">
+                <span class="status-badge {cor_bcb}" style="font-size: 14px; padding: 8px 16px;">
+                    🏛️ BCB: {MACRO_DATA['selic']:.2f}% (Selic)
+                </span>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    with col_status2:
+        st.markdown(f"""
+            <div style="text-align: center;">
+                <span class="status-badge {cor_bcb}" style="font-size: 14px; padding: 8px 16px;">
+                    📈 IPCA: {MACRO_DATA['ipca']:.2f}%
+                </span>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    with col_status3:
+        st.markdown(f"""
+            <div style="text-align: center;">
+                <span class="status-badge {COR_STATUS_MERCADO}" style="font-size: 14px; padding: 8px 16px;">
+                    🌍 {STATUS_MERCADO}
+                </span>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Diagnóstico detalhado
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("**📡 Diagnóstico Banco Central:**")
+        if MACRO_DATA['status']:
+            st.success(f"✅ Conectado com sucesso")
+            st.caption(f"Selic Meta: {SELIC_ATUAL:.2f}% a.a.")
+            st.caption(f"IPCA (12 meses): {IPCA_ATUAL:.2f}%")
+            st.caption(f"CDI Estimado: {CDI_ATUAL:.2f}% a.a.")
+        else:
+            st.error("❌ Falha na conexão com API do BCB")
+            st.caption("Usando valores padrão de fallback")
+            st.caption(f"Selic Padrão: {SELIC_ATUAL:.2f}%")
+            st.caption(f"IPCA Padrão: {IPCA_ATUAL:.2f}%")
+    
+    with col2:
+        st.markdown("**📊 Diagnóstico Yahoo Finance:**")
+        if total_ativos_live > 0:
+            st.success(f"✅ Conectado - {total_ativos_live} ativos atualizados")
+            st.caption("**Ativos com dados live:**")
+            for nome, retorno in list(LIVE_RETURNS.items())[:5]:
+                emoji = "🟢" if retorno > 0 else "🔴"
+                st.caption(f"{emoji} {nome}: {retorno:+.2f}%")
+            if len(LIVE_RETURNS) > 5:
+                st.caption(f"... e mais {len(LIVE_RETURNS)-5} ativos")
+        else:
+            st.warning("⚠️ Nenhum ativo obtido do mercado")
+            st.caption("**Possíveis causas:**")
+            st.caption("• Mercado fechado (B3: 10h-17h)")
+            st.caption("• Problemas temporários na API")
+            st.caption("• Cache expirado (TTL: 12h)")
+            st.caption("• Rate limiting do Yahoo Finance")
+            
+            # Botão para forçar atualização
+            if st.button("🔄 Forçar Atualização dos Dados", key="force_refresh"):
+                st.cache_data.clear()
+                st.rerun()
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.info("💡 **Nota:** Os dados do BCB são atualizados diariamente. Os dados de mercado são atualizados a cada 12 horas durante o horário de funcionamento da B3.")
+
+# ==============================================================================
+# 11. RODAPÉ
 # ==============================================================================
 st.markdown("""
 <div style='text-align: center; margin-top: 50px; color: #888; font-size: 14px;'>
