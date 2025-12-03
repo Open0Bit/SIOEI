@@ -2,5 +2,6 @@ streamlit
 matplotlib
 numpy
 requests
-pillow
+Pillow
 yfinance
+pandas
