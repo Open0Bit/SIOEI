@@ -1,7 +1,7 @@
 """
 =============================================================================
 PROJETO: SIOEI (Sistema Inteligente de Otimização e Execução de Investimentos)
-VERSÃO: 4.1 (Michelangelo Edition 🎨) - DEPURADO
+VERSÃO: 4.2 (Michelangelo Edition 🎨) - REATOR UI
 CODENAME: Sprout 🌱 - Edição "Raio-X ANBIMA/B3" + UI Premium
 DESCRIÇÃO: Calibração baseada no comportamento real do investidor brasileiro (2024/25).
            Foco em Rentismo (CDI), Paixão por FIIs e Alta Adoção de Cripto.
@@ -813,25 +813,9 @@ else: # Manual
 # Injetar o CSS do fundo dinâmico
 st.markdown(bg_css, unsafe_allow_html=True)
 
-st.divider()
+st.markdown("<br>", unsafe_allow_html=True)
 
-# --- INPUTS DE INVESTIMENTO ---
-c1, c2, c3 = st.columns(3)
-v_inicial = c1.number_input(
-    "Aporte Inicial (R$)", 
-    value=10000.0, 
-    step=100.0, 
-    min_value=0.0
-)
-v_mensal = c2.number_input(
-    "Aporte Mensal (R$)", 
-    value=0.0,  # Retornado para 0
-    step=100.0, 
-    min_value=0.0
-)
-anos = c3.slider("Prazo (Anos)", 1, 40, 10)
-
-# --- SELEÇÃO DE MODO ---
+# --- SELEÇÃO DE PERFIL / ESTRATÉGIA (MOVIDA PARA CIMA) ---
 if modo == "Automático":
     perfil_sel = st.selectbox(
         "Selecione seu Perfil (Realidade Brasil 🇧🇷):", 
@@ -858,6 +842,24 @@ elif modo == "Assistido":
         atualizar_reativo()
 else:
     st.caption("💡 Modo Manual: Abra o 'Ajuste Fino' abaixo para configurar sua carteira.")
+
+st.divider()
+
+# --- INPUTS DE INVESTIMENTO ---
+c1, c2, c3 = st.columns(3)
+v_inicial = c1.number_input(
+    "Aporte Inicial (R$)", 
+    value=10000.0, 
+    step=100.0, 
+    min_value=0.0
+)
+v_mensal = c2.number_input(
+    "Aporte Mensal (R$)", 
+    value=0.0,  # Retornado para 0
+    step=100.0, 
+    min_value=0.0
+)
+anos = c3.slider("Prazo (Anos)", 1, 40, 10)
 
 # --- AJUSTE FINO DA CARTEIRA ---
 with st.expander("🎛️ AJUSTE FINO DA CARTEIRA (Clique para Abrir/Fechar)", expanded=False):
